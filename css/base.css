@@ -1,0 +1,201 @@
+body {
+    background: linear-gradient(180deg, var(--bg-primary), var(--bg-secondary));
+    color: var(--text-primary);
+    transition: background var(--transition-slow), color var(--transition-slow);
+    overflow-x: hidden;
+    position: relative;
+    min-height: 100vh;
+}
+
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: inherit;
+    z-index: -3;
+}
+
+/* RGB pulse background for party mode */
+[data-theme="party"] body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        45deg,
+        #FF00FF 0%,
+        #00FFFF 25%,
+        #FF00FF 50%,
+        #00FF00 75%,
+        #FF00FF 100%
+    );
+    background-size: 400% 400%;
+    animation: rgbPulse 8s ease infinite;
+    opacity: 0.1;
+    z-index: -2;
+}
+
+@keyframes rgbPulse {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+h1 {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    text-align: center;
+    background: linear-gradient(45deg, var(--accent-neon), var(--accent-pink));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: textGlow 2s ease-in-out infinite alternate;
+}
+
+h2 {
+    font-size: 2.5rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    color: var(--accent-neon);
+}
+
+h3 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    color: var(--text-primary);
+}
+
+p {
+    margin-bottom: 1rem;
+    color: var(--text-secondary);
+    line-height: 1.8;
+}
+
+.btn-primary, .btn-secondary {
+    padding: 12px 30px;
+    border-radius: 30px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    border: 2px solid;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 0 10px;
+}
+
+.btn-primary {
+    background: var(--accent-neon);
+    color: #000;
+    border-color: var(--accent-neon);
+}
+
+.btn-primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(0, 243, 255, 0.4);
+}
+
+.btn-secondary {
+    background: transparent;
+    color: var(--accent-neon);
+    border-color: var(--accent-neon);
+}
+
+.btn-secondary:hover {
+    background: var(--accent-neon);
+    color: #000;
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(0, 243, 255, 0.4);
+}
+
+/* Strobe light effect */
+body.strobe-active::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: white;
+    opacity: 0;
+    z-index: 9997;
+    pointer-events: none;
+    animation: strobeFlash 0.2s infinite alternate;
+}
+
+@keyframes strobeFlash {
+    0% { opacity: 0; }
+    50% { opacity: 0.8; background: #FFFFFF; }
+    51% { opacity: 0.8; background: #FF00FF; }
+    52% { opacity: 0.8; background: #00FFFF; }
+    100% { opacity: 0; }
+}
+
+/* Text glow animation */
+@keyframes textGlow {
+    from {
+        text-shadow: 0 0 5px rgba(0, 243, 255, 0.5);
+    }
+    to {
+        text-shadow: 0 0 20px rgba(0, 243, 255, 0.8), 0 0 30px rgba(255, 0, 255, 0.6);
+    }
+}
+
+/* Floating particle animation */
+.floating-particle {
+    pointer-events: none;
+}
+
+@keyframes floatParticle {
+    0% {
+        transform: translate(0, 0) rotate(0deg) scale(1);
+        opacity: 0.2;
+    }
+    25% {
+        opacity: 0.8;
+    }
+    50% {
+        transform: translate(100px, -100px) rotate(180deg) scale(1.2);
+        opacity: 0.5;
+    }
+    75% {
+        opacity: 0.8;
+    }
+    100% {
+        transform: translate(0, 0) rotate(360deg) scale(1);
+        opacity: 0.2;
+    }
+}
+
+/* Confetti animation */
+.confetti {
+    position: fixed;
+    width: 10px;
+    height: 10px;
+    background-color: #f00;
+    opacity: 0.8;
+    z-index: 9999;
+    animation: confettiFall 5s linear forwards;
+}
+
+@keyframes confettiFall {
+    0% {
+        transform: translateY(-100px) rotate(0deg);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(100vh) rotate(720deg);
+        opacity: 0;
+    }
+}

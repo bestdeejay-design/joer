@@ -1,0 +1,149 @@
+/* General Animations */
+.fade-in {
+    animation: fadeIn 1s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.slide-in-up {
+    animation: slideInUp 0.8s ease-out;
+}
+
+@keyframes slideInUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+}
+
+.slide-in-down {
+    animation: slideInDown 0.8s ease-out;
+}
+
+@keyframes slideInDown {
+    from { transform: translateY(-100%); }
+    to { transform: translateY(0); }
+}
+
+.bounce {
+    animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
+    40% {transform: translateY(-20px);}
+    60% {transform: translateY(-10px);}
+}
+
+.pulse-glow {
+    animation: pulseGlow 2s infinite;
+}
+
+@keyframes pulseGlow {
+    0% { box-shadow: 0 0 10px rgba(0, 243, 255, 0.5); }
+    50% { box-shadow: 0 0 20px rgba(0, 243, 255, 0.8), 0 0 30px rgba(255, 0, 255, 0.6); }
+    100% { box-shadow: 0 0 10px rgba(0, 243, 255, 0.5); }
+}
+
+.rotate-continuous {
+    animation: rotateContinuous 20s linear infinite;
+}
+
+@keyframes rotateContinuous {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.scale-pulse {
+    animation: scalePulse 1.5s ease-in-out infinite;
+}
+
+@keyframes scalePulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+/* Theme Transition Animations */
+.theme-transition {
+    transition: all var(--transition-slow);
+}
+
+/* Loading Animation */
+.loading {
+    animation: loadingSpin 1s linear infinite;
+}
+
+@keyframes loadingSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Hover Effects */
+.hover-lift {
+    transition: transform var(--transition-fast);
+}
+
+.hover-lift:hover {
+    transform: translateY(-5px);
+}
+
+.hover-glow {
+    transition: box-shadow var(--transition-fast);
+}
+
+.hover-glow:hover {
+    box-shadow: 0 10px 25px rgba(0, 243, 255, 0.4);
+}
+
+/* Focus Effects */
+.focus-ring {
+    outline: none;
+    transition: box-shadow var(--transition-fast);
+}
+
+.focus-ring:focus {
+    box-shadow: 0 0 0 3px rgba(0, 243, 255, 0.5);
+}
+
+/* Scroll Animations */
+.scroll-reveal {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.8s ease, transform 0.8s ease;
+}
+
+.scroll-reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Party Mode Specific Animations */
+.party-mode .disco-ball {
+    animation-duration: 3s;
+}
+
+.party-mode .vinyl-record {
+    animation-duration: 2s;
+}
+
+.party-mode .light-beam {
+    animation-duration: 5s;
+}
+
+/* Animation Performance Optimization */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+    
+    .visualizer-bar {
+        animation: none !important;
+        transition: none !important;
+    }
+}

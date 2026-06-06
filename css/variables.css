@@ -1,0 +1,41 @@
+:root {
+    /* Default Dark Mode */
+    --bg-primary: #000000;
+    --bg-secondary: #0A0014;
+    --text-primary: #E0E0E0;
+    --text-secondary: #808080;
+    --accent-neon: #00F3FF;
+    --accent-pink: #FF00FF;
+    --card-bg: rgba(20, 20, 30, 0.8);
+    --disco-speed: 10s linear;
+    --vinyl-speed: 8s linear;
+    
+    /* Party Mode Overrides */
+    --party-bg-primary: #000000;
+    --party-bg-secondary: #000000;
+    --party-text-primary: #FFFFFF;
+    --party-text-secondary: #00F3FF;
+    --party-accent-neon: #FF00FF;
+    --party-accent-pink: #00FFFF;
+    --party-card-bg: rgba(30, 10, 40, 0.9);
+    --party-disco-speed: 3s linear;
+    --party-vinyl-speed: 2s linear;
+    
+    /* Transitions */
+    --transition-fast: 0.2s ease;
+    --transition-medium: 0.4s ease;
+    --transition-slow: 0.8s ease;
+}
+
+[data-theme="party"] {
+    /* Party Mode */
+    --bg-primary: var(--party-bg-primary);
+    --bg-secondary: var(--party-bg-secondary);
+    --text-primary: var(--party-text-primary);
+    --text-secondary: var(--party-text-secondary);
+    --accent-neon: var(--party-accent-neon);
+    --accent-pink: var(--party-accent-pink);
+    --card-bg: var(--party-card-bg);
+    --disco-speed: var(--party-disco-speed);
+    --vinyl-speed: var(--party-vinyl-speed);
+}

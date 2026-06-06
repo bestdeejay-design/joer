@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>After Dark — Electronic Music Portal</title>
+    <link rel="stylesheet" href="./css/reset.css">
+    <link rel="stylesheet" href="./css/variables.css">
+    <link rel="stylesheet" href="./css/base.css">
+    <link rel="stylesheet" href="./css/layout.css">
+    <link rel="stylesheet" href="./css/components.css">
+    <link rel="stylesheet" href="./css/disco-effects.css">
+    <link rel="stylesheet" href="./css/radio-player.css">
+    <link rel="stylesheet" href="./css/animations.css">
+</head>
+<body data-theme="lounge">
+    <!-- Disco Ball with Light Beams -->
+    <div class="disco-ball-container">
+        <svg class="disco-ball" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+            <!-- Outer circle -->
+            <circle cx="100" cy="100" r="80" fill="none" stroke="#FF00FF" stroke-width="2" stroke-dasharray="5,5"/>
+            
+            <!-- Mirror facets -->
+            <g class="facets">
+                <rect x="60" y="60" width="20" height="20" fill="#FF00FF" opacity="0.3"/>
+                <rect x="100" y="60" width="20" height="20" fill="#00FFFF" opacity="0.3"/>
+                <rect x="140" y="60" width="20" height="20" fill="#FFFF00" opacity="0.3"/>
+                <rect x="60" y="100" width="20" height="20" fill="#00FF00" opacity="0.3"/>
+                <rect x="100" y="100" width="20" height="20" fill="#FF00FF" opacity="0.3"/>
+                <rect x="140" y="100" width="20" height="20" fill="#00FFFF" opacity="0.3"/>
+                <rect x="60" y="140" width="20" height="20" fill="#FFFF00" opacity="0.3"/>
+                <rect x="100" y="140" width="20" height="20" fill="#00FF00" opacity="0.3"/>
+                <rect x="140" y="140" width="20" height="20" fill="#FF00FF" opacity="0.3"/>
+            </g>
+            
+            <!-- Center decoration -->
+            <circle cx="100" cy="100" r="30" fill="none" stroke="#FFFFFF" stroke-width="3"/>
+        </svg>
+        
+        <!-- Light beams -->
+        <div class="light-beams">
+            <div class="beam beam-1"></div>
+            <div class="beam beam-2"></div>
+            <div class="beam beam-3"></div>
+            <div class="beam beam-4"></div>
+            <div class="beam beam-5"></div>
+            <div class="beam beam-6"></div>
+        </div>
+    </div>
+
+    <!-- Spinning Vinyl Records -->
+    <div class="vinyl-container left">
+        <svg class="vinyl-record" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="100" cy="100" r="95" fill="#1a1a1a" stroke="#333" stroke-width="2"/>
+            <circle cx="100" cy="100" r="85" fill="#0a0a0a"/>
+            <circle cx="100" cy="100" r="80" fill="none" stroke="#333" stroke-width="1" stroke-dasharray="5,5"/>
+            <circle cx="100" cy="100" r="70" fill="none" stroke="#333" stroke-width="1" stroke-dasharray="5,5"/>
+            <circle cx="100" cy="100" r="60" fill="none" stroke="#333" stroke-width="1" stroke-dasharray="5,5"/>
+            <circle cx="100" cy="100" r="50" fill="none" stroke="#333" stroke-width="1" stroke-dasharray="5,5"/>
+            <circle cx="100" cy="100" r="40" fill="none" stroke="#333" stroke-width="1" stroke-dasharray="5,5"/>
+            <circle cx="100" cy="100" r="25" fill="#FF00FF"/>
+            <text x="100" y="105" text-anchor="middle" fill="white" font-size="10" font-weight="bold">DJ MIX</text>
+            <circle cx="100" cy="100" r="8" fill="#000"/>
+        </svg>
+    </div>
+
+    <div class="vinyl-container right">
+        <svg class="vinyl-record" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="100" cy="100" r="95" fill="#1a1a1a" stroke="#333" stroke-width="2"/>
+            <circle cx="100" cy="100" r="85" fill="#0a0a0a"/>
+            <circle cx="100" cy="100" r="80" fill="none" stroke="#333" stroke-width="1" stroke-dasharray="5,5"/>
+            <circle cx="100" cy="100" r="70" fill="none" stroke="#333" stroke-width="1" stroke-dasharray="5,5"/>
+            <circle cx="100" cy="100" r="60" fill="none" stroke="#333" stroke-width="1" stroke-dasharray="5,5"/>
+            <circle cx="100" cy="100" r="50" fill="none" stroke="#333" stroke-width="1" stroke-dasharray="5,5"/>
+            <circle cx="100" cy="100" r="40" fill="none" stroke="#333" stroke-width="1" stroke-dasharray="5,5"/>
+            <circle cx="100" cy="100" r="25" fill="#FF00FF"/>
+            <text x="100" y="105" text-anchor="middle" fill="white" font-size="10" font-weight="bold">DJ MIX</text>
+            <circle cx="100" cy="100" r="8" fill="#000"/>
+        </svg>
+    </div>
+
+    <!-- Theme Switcher Button -->
+    <div class="theme-switcher" id="themeSwitcher">
+        <div class="theme-icon">🎛️</div>
+        <span class="theme-label">LOUNGE</span>
+    </div>
+
+    <!-- Navigation Sidebar -->
+    <nav class="sidebar-nav">
+        <ul>
+            <li><a href="#home" class="nav-link"><svg class="nav-icon"><use href="#home-icon"/></svg> Home</a></li>
+            <li><a href="#radio" class="nav-link"><svg class="nav-icon"><use href="#radio-icon"/></svg> Radio</a></li>
+            <li><a href="#music" class="nav-link"><svg class="nav-icon"><use href="#music-icon"/></svg> Music</a></li>
+            <li><a href="#events" class="nav-link"><svg class="nav-icon"><use href="#events-icon"/></svg> Events</a></li>
+            <li><a href="#about" class="nav-link"><svg class="nav-icon"><use href="#about-icon"/></svg> About</a></li>
+        </ul>
+    </nav>
+
+    <!-- Mobile Hamburger Menu -->
+    <div class="mobile-menu-toggle" id="mobileMenuToggle">
+        <span></span>
+        <span></span>
+        <span></span>
+    </div>
+
+    <div class="mobile-menu" id="mobileMenu">
+        <ul>
+            <li><a href="#home" class="nav-link"><svg class="nav-icon"><use href="#home-icon"/></svg> Home</a></li>
+            <li><a href="#radio" class="nav-link"><svg class="nav-icon"><use href="#radio-icon"/></svg> Radio</a></li>
+            <li><a href="#music" class="nav-link"><svg class="nav-icon"><use href="#music-icon"/></svg> Music</a></li>
+            <li><a href="#events" class="nav-link"><svg class="nav-icon"><use href="#events-icon"/></svg> Events</a></li>
+            <li><a href="#about" class="nav-link"><svg class="nav-icon"><use href="#about-icon"/></svg> About</a></li>
+        </ul>
+    </div>
+
+    <!-- Main Content Sections -->
+    <main>
+        <!-- Hero Section -->
+        <section id="home" class="hero-section">
+            <div class="container">
+                <h1>AFTER DARK</h1>
+                <p class="subtitle">Electronic Music Portal — Lounge & Club Radio</p>
+                <div class="cta-buttons">
+                    <button class="btn-primary" onclick="scrollToSection('#radio')">Listen Now</button>
+                    <button class="btn-secondary" onclick="scrollToSection('#features')">Explore Stations</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Radio Player Section -->
+        <section id="radio" class="radio-section">
+            <div class="container">
+                <h2>Radio Experience</h2>
+                <p>Select from our curated collection of electronic music stations</p>
+                
+                <div class="audio-player">
+                    <div class="player-left">
+                        <button class="play-pause-btn" title="Play/Pause">▶️</button>
+                        <div class="station-info">
+                            <div class="station-name">Select a station...</div>
+                            <div class="station-genre"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="player-center">
+                        <div class="audio-visualizer">
+                            <div class="visualizer-bar"></div>
+                            <div class="visualizer-bar"></div>
+                            <div class="visualizer-bar"></div>
+                            <div class="visualizer-bar"></div>
+                            <div class="visualizer-bar"></div>
+                            <div class="visualizer-bar"></div>
+                            <div class="visualizer-bar"></div>
+                            <div class="visualizer-bar"></div>
+                            <div class="visualizer-bar"></div>
+                            <div class="visualizer-bar"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="player-right">
+                        <div class="volume-control">
+                            <span>🔊</span>
+                            <input type="range" class="volume-slider" min="0" max="100" value="80">
+                        </div>
+                        
+                        <div class="station-selector">
+                            <button class="selector-btn" title="Select Station">
+                                <svg width="20" height="20" viewBox="0 0 24 24">
+                                    <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" fill="none"/>
+                                </svg>
+                            </button>
+                            
+                            <div class="station-dropdown">
+                                <div class="dropdown-header">
+                                    <h4>LOUNGE STATIONS</h4>
+                                </div>
+                                <div class="station-buttons lounge-stations"></div>
+                                
+                                <div class="dropdown-divider"></div>
+                                
+                                <div class="dropdown-header">
+                                    <h4>PARTY STATIONS</h4>
+                                </div>
+                                <div class="station-buttons party-stations"></div>
+                            </div>
+                        </div>
+                        
+                        <button class="mute-btn" title="Mute">🔇</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- About Section -->
+        <section id="about" class="about-section">
+            <div class="container">
+                <h2>About After Dark</h2>
+                <p>Welcome to After Dark, your premier destination for electronic music experiences. Our portal offers two distinct modes:</p>
+                
+                <div class="mode-cards">
+                    <div class="mode-card">
+                        <h3>Lounge Mode</h3>
+                        <p>Immerse yourself in chill ambient sounds, downtempo beats, and atmospheric textures perfect for relaxing evenings.</p>
+                    </div>
+                    <div class="mode-card">
+                        <h3>Party Mode</h3>
+                        <p>Activate the dance floor with high-energy electronic music, pulsating rhythms, and club-ready tracks.</p>
+                    </div>
+                </div>
+                
+                <p>Our advanced radio system automatically selects music that matches your chosen theme, ensuring the perfect atmosphere for your evening.</p>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section id="features" class="features-section">
+            <div class="container">
+                <h2>Features</h2>
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h3>40+ Curated Stations</h3>
+                        <p>From ambient chillout to high-energy dance floors, we've selected the best electronic music stations worldwide.</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3>Auto-Fallback System</h3>
+                        <p>If a station goes offline, our system automatically switches to the next available station in the same genre.</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3>Visualizer & Effects</h3>
+                        <p>Immersive visual effects that sync with the music, including disco ball, spinning vinyls, and strobe lights.</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3>Theme-Based Music</h3>
+                        <p>Music selection automatically adapts to your chosen theme - Lounge or Party mode.</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3>Mobile Responsive</h3>
+                        <p>Perfect experience on all devices from mobile phones to desktop computers.</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3>Advanced Controls</h3>
+                        <p>Volume, mute, station selection, and visual effects all at your fingertips.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Sound Wave Animation -->
+    <div class="sound-wave-container">
+        <svg class="sound-wave" viewBox="0 0 1000 100" xmlns="http://www.w3.org/2000/svg">
+            <path d="M0,50 L50,30 L100,60 L150,20 L200,70 L250,40 L300,80 L350,30 L400,60 L450,25 L500,75 L550,35 L600,85 L650,25 L700,70 L750,40 L800,90 L850,30 L900,65 L950,35 L1000,50" 
+                  fill="none" 
+                  stroke="url(#gradient)"
+                  stroke-width="4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"/>
+            
+            <defs>
+                <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#FF00FF" stop-opacity="0.8"/>
+                    <stop offset="50%" stop-color="#00FFFF" stop-opacity="1"/>
+                    <stop offset="100%" stop-color="#FF00FF" stop-opacity="0.8"/>
+                </linearGradient>
+            </defs>
+        </svg>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>© 2026 After Dark — Electronic Music Portal</p>
+            <p>All radio stations are property of their respective owners</p>
+        </div>
+    </footer>
+
+    <!-- SVG Sprite for Icons -->
+    <svg style="display: none;">
+        <symbol id="home-icon" viewBox="0 0 24 24">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9,22 9,12 15,12 15,22"/>
+        </symbol>
+        <symbol id="radio-icon" viewBox="0 0 24 24">
+            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+            <polyline points="14,2 14,8 20,8"/>
+            <circle cx="16" cy="14" r="2"/>
+            <path d="M17.5 18.5a.5.5 0 1 1-1 0 .5.5 0 1 1 1 0z"/>
+        </symbol>
+        <symbol id="music-icon" viewBox="0 0 24 24">
+            <path d="M9 18V5l12-2v13"/>
+            <circle cx="6" cy="18" r="3"/>
+            <circle cx="18" cy="16" r="3"/>
+        </symbol>
+        <symbol id="events-icon" viewBox="0 0 24 24">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+        </symbol>
+        <symbol id="about-icon" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="16" x2="12" y2="12"/>
+            <line x1="12" y1="8" x2="12.01" y2="8"/>
+        </symbol>
+    </svg>
+
+    <script src="./js/main.js"></script>
+    <script src="./js/theme-switcher.js"></script>
+    <script src="./js/disco-ball.js"></script>
+    <script src="./js/vinyl-records.js"></script>
+    <script src="./js/particles.js"></script>
+    <script src="./js/strobe-effect.js"></script>
+    <script src="./js/radio-player.js"></script>
+</body>
+</html>

@@ -1,0 +1,155 @@
+/* Disco Ball Container */
+.disco-ball-container {
+    position: fixed;
+    top: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
+    pointer-events: none;
+}
+
+.disco-ball {
+    width: 150px;
+    height: 150px;
+    animation: rotateDiscoBall var(--disco-speed) infinite linear;
+    filter: drop-shadow(0 0 20px var(--accent-neon));
+}
+
+@keyframes rotateDiscoBall {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.light-beams {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+}
+
+.beam {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 4px;
+    height: 100vh;
+    background: linear-gradient(
+        to bottom,
+        transparent 0%,
+        var(--accent-neon) 50%,
+        transparent 100%
+    );
+    transform-origin: top center;
+    opacity: 0.3;
+    filter: blur(2px);
+}
+
+.beam-1 { transform: translate(-50%, -50%) rotate(0deg); animation: beamRotate 15s infinite linear; }
+.beam-2 { transform: translate(-50%, -50%) rotate(60deg); animation: beamRotate 15s infinite linear; animation-delay: -2.5s; }
+.beam-3 { transform: translate(-50%, -50%) rotate(120deg); animation: beamRotate 15s infinite linear; animation-delay: -5s; }
+.beam-4 { transform: translate(-50%, -50%) rotate(180deg); animation: beamRotate 15s infinite linear; animation-delay: -7.5s; }
+.beam-5 { transform: translate(-50%, -50%) rotate(240deg); animation: beamRotate 15s infinite linear; animation-delay: -10s; }
+.beam-6 { transform: translate(-50%, -50%) rotate(300deg); animation: beamRotate 15s infinite linear; animation-delay: -12.5s; }
+
+@keyframes beamRotate {
+    from { transform: translate(-50%, -50%) rotate(0deg); opacity: 0.3; }
+    50% { opacity: 0.6; }
+    to { transform: translate(-50%, -50%) rotate(360deg); opacity: 0.3; }
+}
+
+/* Spinning Vinyl Records */
+.vinyl-container {
+    position: fixed;
+    bottom: 50px;
+    width: 120px;
+    height: 120px;
+    z-index: 9998;
+    animation: vinylFloat 3s ease-in-out infinite;
+}
+
+.vinyl-container.left {
+    left: 50px;
+    animation-delay: 0s;
+}
+
+.vinyl-container.right {
+    right: 50px;
+    animation-delay: 1.5s;
+}
+
+.vinyl-record {
+    width: 100%;
+    height: 100%;
+    animation: spinVinyl var(--vinyl-speed) infinite linear;
+    filter: drop-shadow(0 0 15px var(--accent-neon));
+}
+
+@keyframes spinVinyl {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes vinylFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+[data-theme="party"] .vinyl-record {
+    animation: spinVinyl var(--vinyl-speed) infinite linear, vinylBounce 0.5s ease-in-out infinite;
+}
+
+@keyframes vinylBounce {
+    0%, 100% { transform: rotate(0deg) scale(1); }
+    50% { transform: rotate(180deg) scale(1.05); }
+}
+
+/* Sound Wave Animation */
+.sound-wave-container {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 80px;
+    z-index: 9996;
+    background: rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+}
+
+.sound-wave {
+    width: 100%;
+    height: 100%;
+    animation: waveMove 10s linear infinite;
+}
+
+@keyframes waveMove {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+}
+
+[data-theme="party"] .sound-wave {
+    animation: waveMove 5s linear infinite, wavePulse 0.5s ease-in-out infinite;
+}
+
+@keyframes wavePulse {
+    0%, 100% { stroke-width: 4; opacity: 0.8; }
+    50% { stroke-width: 8; opacity: 1; }
+}
+
+/* Party Mode Enhancements */
+[data-theme="party"] .disco-ball {
+    animation: rotateDiscoBall var(--disco-speed) infinite linear;
+}
+
+[data-theme="party"] .light-beams .beam {
+    opacity: 0.5;
+    filter: blur(3px);
+}
+
+[data-theme="party"] .light-beams .beam-1 { animation: beamRotate 8s infinite linear; }
+[data-theme="party"] .light-beams .beam-2 { animation: beamRotate 8s infinite linear; animation-delay: -1.33s; }
+[data-theme="party"] .light-beams .beam-3 { animation: beamRotate 8s infinite linear; animation-delay: -2.66s; }
+[data-theme="party"] .light-beams .beam-4 { animation: beamRotate 8s infinite linear; animation-delay: -4s; }
+[data-theme="party"] .light-beams .beam-5 { animation: beamRotate 8s infinite linear; animation-delay: -5.33s; }
+[data-theme="party"] .light-beams .beam-6 { animation: beamRotate 8s infinite linear; animation-delay: -6.66s; }
