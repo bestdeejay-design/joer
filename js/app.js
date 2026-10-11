@@ -11,8 +11,10 @@ import { setupRovingTabs, restoreTabFocus } from "./ui/controls.js";
 import { prefs, toggleFavorite } from "./storage.js";
 import { Player, STATE } from "./player.js";
 import { createPlayerView } from "./ui/player-view.js";
-import { ThemeManager } from "./themes.js";
+import { ThemeManager, themeById } from "./themes.js";
 import { createThemePicker } from "./ui/theme-picker.js";
+import { Atmosphere } from "./atmosphere.js";
+import { createReactivity, stationSupportsReactivity } from "./audio-reactivity.js";
 
 const els = {
   groups: document.getElementById("groups"),
@@ -52,6 +54,15 @@ createThemePicker({
     document.dispatchEvent(new CustomEvent("joer:intensitychange", { detail: { value } }));
   },
 });
+
+/** Атмосферный движок: сцена от темы, живость от станции и состояния плеера. */
+const atmosphere = new Atmosphere(document.getElementById("atmosphere"));
+atmosphere.setScene(themeById(themes.theme).scene);
+atmosphere.setIntensity(state.intensity);
+atmosphere.start();
+
+themes.addEventListener("change", (event) => atmosphere.setScene(event.detail.scene));
+document.addEventListener("joer:intensitychange", (event) => atmosphere.setIntensity(event.detail.value));
 
 /* ------------------------------------------------------------------
    Плеер
@@ -96,12 +107,42 @@ player.bindMediaSession({
   previous: () => playNeighbour(-1),
 });
 
-player.addEventListener("change", () => {
+/**
+ * Аудио-реактивность — только для станций с явным флагом `cors: true`.
+ * Любая неудача → пересоздаём <audio> без Web Audio-графа: звук важнее эффектов.
+ */
+let reactivity = null;
+
+function attachReactivity(station) {
+  reactivity?.dispose();
+  reactivity = null;
+
+  if (!stationSupportsReactivity(station)) {
+    atmosphere.setLevels(null);
+    return;
+  }
+
+  reactivity = createReactivity(player.ensureAudio(), {
+    onLevels: (levels) => atmosphere.setLevels(levels),
+    onFallback: (error) => {
+      console.info("[joer] реактивность отключена, сцена снова процедурная:", error?.message ?? error);
+      reactivity = null;
+      atmosphere.setLevels(null);
+      player.recreateAudio();
+    },
+  });
+}
+
+player.addEventListener("change", (event) => {
   syncVolumeUI();
   syncActiveCards();
+  atmosphere.setPlayerState(event.detail.state);
 });
 
-player.addEventListener("stationchange", () => {
+player.addEventListener("stationchange", (event) => {
+  atmosphere.setEnergy(event.detail.station?.energy);
+  attachReactivity(event.detail.station);
+
   const groupId = player.station?.groupId;
   if (groupId && groupId !== state.activeGroupId) {
     state.activeGroupId = groupId;
@@ -292,4 +333,4 @@ els.retry?.addEventListener("click", () => {
 syncVolumeUI();
 bootstrap();
 
-export { player, state, themes, renderCatalog, clearSearch };
+export { player, state, themes, atmosphere, renderCatalog, clearSearch };

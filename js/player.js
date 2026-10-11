@@ -155,6 +155,17 @@ export class Player extends EventTarget {
     this.setMuted(!this.muted);
   }
 
+  /**
+   * Пересоздать <audio> без Web Audio-графа.
+   * Аварийный выход из аудио-реактивности: звук важнее визуальных эффектов.
+   */
+  async recreateAudio() {
+    const wasActive = this.state === STATE.PLAYING || this.state === STATE.LOADING;
+    this.detachAudio();
+    if (wasActive && this.station) return this.resume();
+    return undefined;
+  }
+
   destroy() {
     this.clearTimers();
     this.detachAudio();
