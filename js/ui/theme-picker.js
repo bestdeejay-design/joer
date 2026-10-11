@@ -1,10 +1,19 @@
-/**
- * JOER — селектор темы и интенсивности атмосферы (T-05).
+/** 
+ * JOER — селектор темы, интенсивности и качества атмосферы (T-05, T-09).
  */
 
 import { AUTO, THEMES } from "../themes.js";
 
-export function createThemePicker({ root, manager, onIntensity, initialIntensity }) {
+export function createThemePicker({
+  root,
+  manager,
+  onIntensity,
+  initialIntensity,
+  onQuality,
+  initialQuality,
+  onCalm,
+  initialCalm,
+}) {
   if (!root) return null;
 
   const el = {
@@ -14,6 +23,8 @@ export function createThemePicker({ root, manager, onIntensity, initialIntensity
     options: [...root.querySelectorAll(".theme-option")],
     intensity: root.querySelector("#intensity"),
     intensityValue: root.querySelector("#intensity-value"),
+    qualityButtons: [...root.querySelectorAll("[data-quality]")],
+    calm: root.querySelector("#calm-mode"),
   };
 
   function setOpen(open) {
@@ -87,6 +98,27 @@ export function createThemePicker({ root, manager, onIntensity, initialIntensity
     el.intensity.addEventListener("input", () => apply(false));
     el.intensity.addEventListener("change", () => apply(true));
     apply(true);
+  }
+
+  // Качество сцены: экономия батареи ↔ глубокий bloom
+  if (el.qualityButtons.length) {
+    const setQuality = (value) => {
+      for (const button of el.qualityButtons) {
+        button.setAttribute("aria-checked", String(button.dataset.quality === value));
+      }
+      onQuality?.(value);
+    };
+    for (const button of el.qualityButtons) {
+      button.addEventListener("click", () => setQuality(button.dataset.quality));
+    }
+    setQuality(initialQuality ?? "med");
+  }
+
+  // «Спокойный режим» — мягкое движение без вспышек
+  if (el.calm) {
+    el.calm.checked = Boolean(initialCalm);
+    el.calm.addEventListener("change", () => onCalm?.(el.calm.checked));
+    onCalm?.(el.calm.checked);
   }
 
   manager.addEventListener("change", render);

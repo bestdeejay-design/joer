@@ -151,6 +151,25 @@
               <input id="intensity" type="range" min="0" max="100" step="5" value="75" aria-describedby="intensity-hint">
               <p class="theme-intensity-hint" id="intensity-hint">Сила фона: от лёгкой дымки до яркой живой сцены. Влияет на свет, скорость и движение.</p>
             </div>
+
+            <div class="theme-settings">
+              <div class="theme-settings-row">
+                <span class="theme-settings-label" id="quality-label">Качество сцены</span>
+                <div class="seg" role="radiogroup" aria-labelledby="quality-label">
+                  <button class="seg-btn" type="button" role="radio" aria-checked="false" data-quality="low">Эконом</button>
+                  <button class="seg-btn" type="button" role="radio" aria-checked="true" data-quality="med">Средне</button>
+                  <button class="seg-btn" type="button" role="radio" aria-checked="false" data-quality="high">Макс</button>
+                </div>
+              </div>
+              <label class="switch" for="calm-mode">
+                <input type="checkbox" id="calm-mode">
+                <span class="switch-box" aria-hidden="true"></span>
+                <span class="switch-text">
+                  <strong>Спокойный режим</strong>
+                  <small>мягкое движение без вспышек — рядом с настройкой «уменьшить движение» в системе</small>
+                </span>
+              </label>
+            </div>
           </div>
         </div>
       </div>
