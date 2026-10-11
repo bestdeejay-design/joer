@@ -1,0 +1,87 @@
+/* ============================================================
+   JOER — табы групп (T-01/T-04)
+   Пилюли с горизонтальным скроллом на мобиле, тач-таргет ≥ 44px.
+   ============================================================ */
+
+.groups {
+  position: relative;
+  margin-block: var(--sp-4) var(--sp-5);
+}
+
+.groups-track {
+  display: flex;
+  gap: var(--sp-2);
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: var(--sp-1) var(--sp-1) var(--sp-3);
+  margin-inline: calc(var(--sp-1) * -1);
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  /* мягкие края у скролла */
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 var(--sp-3), #000 calc(100% - var(--sp-3)), transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 var(--sp-3), #000 calc(100% - var(--sp-3)), transparent 100%);
+}
+
+.groups-track::-webkit-scrollbar {
+  display: none;
+}
+
+.group-tab {
+  position: relative;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: var(--touch);
+  padding: 0 var(--sp-4);
+  border-radius: var(--r-pill);
+  border: 1px solid color-mix(in oklab, var(--border) 80%, transparent);
+  background: color-mix(in oklab, var(--surface) 45%, transparent);
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  scroll-snap-align: start;
+  transition:
+    color var(--dur-2) var(--ease-soft),
+    background-color var(--dur-2) var(--ease-soft),
+    border-color var(--dur-2) var(--ease-soft),
+    transform var(--dur-2) var(--ease-spring);
+}
+
+.group-tab:hover {
+  color: var(--text);
+  border-color: color-mix(in oklab, var(--accent) 40%, var(--border));
+  transform: translateY(-1px);
+}
+
+.group-tab[aria-pressed="true"] {
+  color: var(--accent-ink);
+  border-color: transparent;
+  background: linear-gradient(120deg, var(--accent), var(--accent-2));
+  box-shadow: 0 10px 26px -12px color-mix(in oklab, var(--accent) 85%, transparent);
+}
+
+.group-tab-count {
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  padding: 1px 6px;
+  border-radius: var(--r-pill);
+  background: color-mix(in oklab, var(--bg-0) 22%, transparent);
+  opacity: 0.75;
+}
+
+.group-tab[aria-pressed="false"] .group-tab-count {
+  background: color-mix(in oklab, var(--surface-3) 80%, transparent);
+  color: var(--text-faint);
+}
+
+.group-description {
+  min-height: 1.5em;
+  color: var(--text-muted);
+  font-size: var(--fs-md);
+  max-width: 62ch;
+  margin-bottom: var(--sp-5);
+}

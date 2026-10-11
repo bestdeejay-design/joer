@@ -1,0 +1,131 @@
+/* ============================================================
+   JOER — дизайн-токены (T-01)
+   Всё, что не зависит от темы. Темы переопределяют только цвета
+   и «атмосферные» переменные — см. css/themes/*.css.
+   ============================================================ */
+
+/* Регистрируем «атмосферные» цвета как анимируемые custom-свойства:
+   это даёт плавную интерполяцию градиентов при смене темы (~800 мс).
+   Браузеры без поддержки @property просто переключат цвет мгновенно. */
+@property --glow-1 { syntax: "<color>"; inherits: true; initial-value: #8b7cf6; }
+@property --glow-2 { syntax: "<color>"; inherits: true; initial-value: #5eead4; }
+@property --glow-3 { syntax: "<color>"; inherits: true; initial-value: #1d2a5e; }
+
+:root {
+  color-scheme: dark;
+
+  /* --- Шкала отступов (4px) --- */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-10: 40px;
+  --sp-12: 48px;
+  --sp-16: 64px;
+  --sp-20: 80px;
+
+  /* --- Типографика: только системные стеки, без внешних загрузок --- */
+  --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+
+  --fs-2xs: 11px;
+  --fs-xs: 12px;
+  --fs-sm: 13px;
+  --fs-md: 15px;
+  --fs-lg: 18px;
+  --fs-xl: 22px;
+  --fs-2xl: 30px;
+  --fs-3xl: clamp(32px, 6.4vw, 56px);
+
+  --lh-tight: 1.12;
+  --lh-normal: 1.5;
+  --lh-loose: 1.7;
+
+  --tr-tight: -0.02em;
+  --tr-snug: -0.005em;
+  --tr-wide: 0.14em;
+
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 750;
+
+  /* --- Радиусы --- */
+  --r-xs: 6px;
+  --r-sm: 10px;
+  --r-md: 16px;
+  --r-lg: 22px;
+  --r-xl: 30px;
+  --r-pill: 999px;
+
+  /* --- Тени --- */
+  --shadow-1: 0 1px 2px rgb(0 0 0 / 0.35);
+  --shadow-2: 0 14px 34px -14px rgb(0 0 0 / 0.6);
+  --shadow-3: 0 34px 80px -30px rgb(0 0 0 / 0.8);
+
+  /* --- Тайминги --- */
+  --dur-1: 120ms;
+  --dur-2: 220ms;
+  --dur-3: 380ms;
+  --dur-scene: 800ms;   /* кроссфейд атмосферных сцен */
+  --dur-theme: 800ms;   /* переход палитры темы */
+
+  --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-soft: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+
+  /* --- Слои --- */
+  --z-bg: 0;
+  --z-canvas: 1;
+  --z-content: 2;
+  --z-header: 30;
+  --z-player: 40;
+  --z-overlay: 60;
+  --z-toast: 70;
+
+  /* --- Прочее --- */
+  --touch: 44px;              /* минимальный тач-таргет */
+  --header-h: 64px;
+  --player-h: 88px;
+  --content-max: 1180px;
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-x: env(safe-area-inset-left, 0px);
+
+  /* ============================================================
+     Базовая палитра = тема lounge (фолбэк, если тема не загрузилась)
+     ============================================================ */
+  --bg-0: #0b0f1e;
+  --bg-1: #151c36;
+  --bg-2: #1c2447;
+
+  --glow-1: #8b7cf6;
+  --glow-2: #5eead4;
+  --glow-3: #1d2a5e;
+
+  --surface: #161d3a;
+  --surface-2: #1d2547;
+  --surface-3: #232c55;
+  --surface-glass: 0.62;      /* непрозрачность «стекла» карточек */
+
+  --border: #2c3663;
+  --border-strong: #3d4a83;
+
+  --text: #e9ecff;
+  --text-muted: #a5aed6;
+  --text-faint: #78809f;
+
+  --accent: #8b7cf6;
+  --accent-2: #5eead4;
+  --accent-soft: #8b7cf62e;
+  --accent-ink: #0b0f1e;      /* текст на акценте */
+  --ring: #a5b4fc;
+
+  --ok: #4ade80;
+  --warn: #fbbf24;
+  --err: #fb7185;
+}

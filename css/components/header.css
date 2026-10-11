@@ -1,0 +1,25 @@
+/* ============================================================
+   JOER — элементы хедера: тема-заглушка → селектор темы (T-05)
+   ============================================================ */
+
+.theme-stub {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 6px var(--sp-3);
+  border-radius: var(--r-pill);
+  border: 1px solid color-mix(in oklab, var(--border) 80%, transparent);
+  background: color-mix(in oklab, var(--surface) 45%, transparent);
+  color: var(--text-muted);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.theme-stub-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: linear-gradient(120deg, var(--accent), var(--accent-2));
+  box-shadow: 0 0 10px color-mix(in oklab, var(--accent) 70%, transparent);
+}

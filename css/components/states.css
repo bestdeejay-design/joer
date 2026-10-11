@@ -1,0 +1,135 @@
+/* ============================================================
+   JOER — состояния: загрузка, ошибка, пусто (T-01)
+   ============================================================ */
+
+.state-panel {
+  padding: var(--sp-8) var(--sp-6);
+  border: 1px dashed color-mix(in oklab, var(--border-strong) 80%, transparent);
+  border-radius: var(--r-lg);
+  background: color-mix(in oklab, var(--surface) 45%, transparent);
+  text-align: center;
+  display: grid;
+  gap: var(--sp-3);
+  justify-items: center;
+}
+
+.state-title {
+  font-size: var(--fs-lg);
+}
+
+.state-text {
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+  max-width: 48ch;
+}
+
+.state-panel code {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--text-faint);
+}
+
+/* --- Скелетон --- */
+.skeleton-grid {
+  display: grid;
+  gap: var(--sp-4);
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  width: 100%;
+}
+
+.skeleton-card {
+  height: 148px;
+  border-radius: var(--r-lg);
+  border: 1px solid color-mix(in oklab, var(--border) 60%, transparent);
+  background:
+    linear-gradient(100deg, transparent 20%, color-mix(in oklab, var(--surface-3) 70%, transparent) 40%, transparent 60%) no-repeat,
+    color-mix(in oklab, var(--surface) 50%, transparent);
+  background-size: 220% 100%, auto;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .skeleton-card {
+    animation: skeleton-sweep 1.6s var(--ease-soft) infinite;
+  }
+
+  @keyframes skeleton-sweep {
+    from { background-position: 120% 0, 0 0; }
+    to { background-position: -40% 0, 0 0; }
+  }
+}
+
+/* --- Кнопки --- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  min-height: var(--touch);
+  padding: 0 var(--sp-5);
+  border-radius: var(--r-pill);
+  border: 1px solid color-mix(in oklab, var(--border-strong) 80%, transparent);
+  background: color-mix(in oklab, var(--surface-2) 70%, transparent);
+  color: var(--text);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.02em;
+  transition:
+    transform var(--dur-2) var(--ease-spring),
+    background-color var(--dur-2) var(--ease-soft),
+    border-color var(--dur-2) var(--ease-soft),
+    box-shadow var(--dur-2) var(--ease-soft);
+}
+
+.btn:hover {
+  border-color: color-mix(in oklab, var(--accent) 55%, var(--border));
+  transform: translateY(-1px);
+}
+
+.btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.btn svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.btn-primary {
+  border-color: transparent;
+  background: linear-gradient(120deg, var(--accent), var(--accent-2));
+  color: var(--accent-ink);
+  box-shadow: 0 14px 34px -14px color-mix(in oklab, var(--accent) 85%, transparent);
+}
+
+.btn-primary:hover {
+  box-shadow: 0 18px 40px -14px color-mix(in oklab, var(--accent) 95%, transparent);
+}
+
+.btn-ghost {
+  background: transparent;
+}
+
+/* --- Живая точка в «брови» героя --- */
+.live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent-2);
+  box-shadow: 0 0 10px color-mix(in oklab, var(--accent-2) 80%, transparent);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .live-dot {
+    animation: live-pulse 2.4s var(--ease-soft) infinite;
+  }
+
+  @keyframes live-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.45; transform: scale(0.82); }
+  }
+}
