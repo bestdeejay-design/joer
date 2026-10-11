@@ -29,6 +29,9 @@ const els = {
   volume: document.getElementById("player-volume"),
   search: document.getElementById("search"),
   searchClear: document.getElementById("search-clear"),
+  resume: document.getElementById("resume"),
+  resumeText: document.getElementById("resume-text"),
+  catalogUpdated: document.getElementById("catalog-updated"),
 };
 
 const state = {
@@ -207,6 +210,7 @@ function renderCatalog() {
     activeId: searching ? null : activeGroupId,
     onSelect: (groupId) => {
       state.activeGroupId = groupId;
+      prefs.group = groupId;
       renderCatalog();
     },
   });
@@ -253,16 +257,48 @@ function renderCatalog() {
   syncActiveCards();
 }
 
+/** «Продолжить последнюю станцию» — один клик, без автоплея. */
+function setupResume(lastStation) {
+  if (!lastStation) return;
+  if (els.resume) els.resume.hidden = false;
+  if (els.resumeText) els.resumeText.textContent = `Продолжить: ${lastStation.name}`;
+}
+
+els.resume?.addEventListener("click", () => {
+  const station = state.catalog?.byId.get(prefs.lastStation);
+  if (station) player.play(station);
+});
+
+player.addEventListener("change", (event) => {
+  if (event.detail.state === STATE.PLAYING && els.resume) els.resume.hidden = true;
+});
+
+function updateCatalogUpdated() {
+  if (els.catalogUpdated && state.catalog) {
+    els.catalogUpdated.textContent = `каталог обновлён ${state.catalog.updatedAt}`;
+  }
+}
+
 async function bootstrap() {
   setLoading(true);
   try {
     state.catalog = await loadCatalog();
-    state.activeGroupId = state.catalog.groups[0]?.id ?? null;
+
+    const lastStation = state.catalog.byId.get(prefs.lastStation) ?? null;
+    state.activeGroupId =
+      lastStation?.groupId ?? (isGroupValid(prefs.group) ? prefs.group : state.catalog.groups[0]?.id ?? null);
+
+    setupResume(lastStation);
     renderCatalog();
+    updateCatalogUpdated();
   } catch (error) {
     console.error("[joer] каталог не загружен:", error);
     showError(error?.message ?? "Неизвестная ошибка загрузки данных.");
   }
+}
+
+function isGroupValid(id) {
+  return Boolean(id) && Boolean(state.catalog?.groupById.get(id));
 }
 
 /* ------------------------------------------------------------------
@@ -298,6 +334,7 @@ els.search?.addEventListener("keydown", (event) => {
 setupRovingTabs(els.groups, {
   onNavigate: (groupId) => {
     state.activeGroupId = groupId;
+    prefs.group = groupId;
     renderCatalog();
   },
 });

@@ -11,7 +11,19 @@
 <meta property="og:description" content="Выбери настроение — лаунж, клуб, романтика, космос, ретро. Атмосфера сайта подстроится под музыку.">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="ru_RU">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0f1e'/%3E%3Ctext x='32' y='44' font-family='Arial,sans-serif' font-size='34' font-weight='bold' fill='%238b7cf6' text-anchor='middle'%3EJ%3C/text%3E%3C/svg%3E">
+<meta property="og:url" content="https://joer.ru/">
+<meta property="og:image" content="https://joer.ru/assets/og-image.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="JOER">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
 <link rel="stylesheet" href="css/tokens.css">
 <link rel="stylesheet" href="css/base.css">
 <link rel="stylesheet" href="css/layout.css">
@@ -157,6 +169,13 @@
           Пять миров: лаунж, клуб, романтика, космос и винтажный джаз. Станция запускается в один клик,
           а цвета, свет и фон перестраиваются под музыку.
         </p>
+        <div class="hero-actions">
+          <button class="btn btn-primary" id="resume" type="button" hidden>
+            <svg aria-hidden="true"><use href="#i-play"></use></svg>
+            <span id="resume-text">Продолжить</span>
+          </button>
+          <a class="btn btn-ghost" href="#stations">Выбрать настроение</a>
+        </div>
       </section>
 
       <section class="section" aria-labelledby="catalog-title">
@@ -194,6 +213,27 @@
             </div>
           </div>
         </section>
+      </section>
+
+      <section class="about" aria-labelledby="about-title">
+        <div class="about-grid">
+          <div>
+            <h2 id="about-title">О станциях</h2>
+            <p>
+              JOER — не стриминговый сервис, а кураторская подборка проверенных интернет-потоков.
+              Мы не хостим музыку: каждая кнопка «Слушать» открывает живой эфир провайдера.
+              Если станция не отвечает, плеер сам предложит следующую.
+            </p>
+          </div>
+          <div>
+            <h2>Провайдеры</h2>
+            <ul class="credit-list">
+              <li><a href="https://somafm.com/" target="_blank" rel="noopener">SomaFM</a> — независимое радио из Сан-Франциско: 30+ каналов без рекламы, на пожертвования.</li>
+              <li><a href="https://radioparadise.com/" target="_blank" rel="noopener">Radio Paradise</a> — авторские миксы без повторов и рекламы, FLAC-качество.</li>
+            </ul>
+          </div>
+        </div>
+        <p class="foot-meta">JOER · joer.ru · <span id="catalog-updated">каталог загружается…</span></p>
       </section>
     </div>
   </main>
