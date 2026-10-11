@@ -12,6 +12,12 @@
   margin: 0;
 }
 
+/* Атрибут hidden должен побеждать любой display из компонентов —
+   иначе панели «ошибка/загрузка», меню темы и кнопки «торчат» всегда. */
+[hidden] {
+  display: none !important;
+}
+
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;

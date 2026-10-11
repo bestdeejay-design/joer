@@ -171,6 +171,34 @@
       "homepage": "https://www.radiorecord.ru/"
     },
     {
+      "id": "record-midtempo",
+      "groupId": "lounge",
+      "name": "Record Midtempo",
+      "provider": "Radio Record",
+      "url": "https://radiorecord.hostingradio.ru/mt96.aacp",
+      "codec": "aac",
+      "bitrate": 96,
+      "genres": ["midtempo", "downtempo"],
+      "mood": "размеренный",
+      "energy": 2,
+      "description": "Средний темп для спокойного драйва.",
+      "homepage": "https://www.radiorecord.ru/"
+    },
+    {
+      "id": "record-beach",
+      "groupId": "lounge",
+      "name": "Record Beach Party",
+      "provider": "Radio Record",
+      "url": "https://radiorecord.hostingradio.ru/beach64.aacp",
+      "codec": "aac",
+      "bitrate": 64,
+      "genres": ["tropical", "lounge"],
+      "mood": "солнечный",
+      "energy": 2,
+      "description": "Тропический лаунж: пляж, бриз, коктейль.",
+      "homepage": "https://www.radiorecord.ru/"
+    },
+    {
       "id": "somafm-beatblender",
       "groupId": "club",
       "name": "Beat Blender",
@@ -336,6 +364,34 @@
       "mood": "жаркий",
       "energy": 3,
       "description": "Латино-танцы и реггетон — солнце в каждом бите.",
+      "homepage": "https://www.radiorecord.ru/"
+    },
+    {
+      "id": "record-trap",
+      "groupId": "club",
+      "name": "Record Trap",
+      "provider": "Radio Record",
+      "url": "https://radiorecord.hostingradio.ru/trap96.aacp",
+      "codec": "aac",
+      "bitrate": 96,
+      "genres": ["trap", "hip-hop"],
+      "mood": "качающий",
+      "energy": 5,
+      "description": "Трэп и 808-е басы — качает с первой секунды.",
+      "homepage": "https://www.radiorecord.ru/"
+    },
+    {
+      "id": "record-house",
+      "groupId": "club",
+      "name": "Record House Hits",
+      "provider": "Radio Record",
+      "url": "https://radiorecord.hostingradio.ru/househits96.aacp",
+      "codec": "aac",
+      "bitrate": 96,
+      "genres": ["house", "dance"],
+      "mood": "танцевальный",
+      "energy": 4,
+      "description": "Главные хаус-хиты клубных площадок.",
       "homepage": "https://www.radiorecord.ru/"
     },
     {
@@ -577,6 +633,34 @@
       "homepage": "https://www.radiorecord.ru/"
     },
     {
+      "id": "record-chillhouse",
+      "groupId": "chill",
+      "name": "Record Chill House",
+      "provider": "Radio Record",
+      "url": "https://radiorecord.hostingradio.ru/hype96.aacp",
+      "codec": "aac",
+      "bitrate": 96,
+      "genres": ["chill house", "melodic"],
+      "mood": "воздушный",
+      "energy": 2,
+      "description": "Мелодичный чилл-хаус для фона и фокуса.",
+      "homepage": "https://www.radiorecord.ru/"
+    },
+    {
+      "id": "record-hypnotic",
+      "groupId": "chill",
+      "name": "Record Hypnotic",
+      "provider": "Radio Record",
+      "url": "https://radiorecord.hostingradio.ru/hypno96.aacp",
+      "codec": "aac",
+      "bitrate": 96,
+      "genres": ["hypnotic", "psybient"],
+      "mood": "гипнотический",
+      "energy": 1,
+      "description": "Гипнотические текстуры для глубокого погружения.",
+      "homepage": "https://www.radiorecord.ru/"
+    },
+    {
       "id": "somafm-sonicuniverse",
       "groupId": "jazz",
       "name": "Sonic Universe",
@@ -672,6 +756,34 @@
       "mood": "ретро",
       "energy": 3,
       "description": "Диско и фанк семидесятых — танцпол из прошлого.",
+      "homepage": "https://www.radiorecord.ru/"
+    },
+    {
+      "id": "record-oldschool",
+      "groupId": "jazz",
+      "name": "Record Old School",
+      "provider": "Radio Record",
+      "url": "https://radiorecord.hostingradio.ru/pump96.aacp",
+      "codec": "aac",
+      "bitrate": 96,
+      "genres": ["old school", "electro"],
+      "mood": "ретро",
+      "energy": 3,
+      "description": "Старая школа электро и фанка — дух 80-х.",
+      "homepage": "https://www.radiorecord.ru/"
+    },
+    {
+      "id": "record-technopop",
+      "groupId": "jazz",
+      "name": "Record Technopop",
+      "provider": "Radio Record",
+      "url": "https://radiorecord.hostingradio.ru/technopop96.aacp",
+      "codec": "aac",
+      "bitrate": 96,
+      "genres": ["synthpop", "80s"],
+      "mood": "неоновый ретро",
+      "energy": 3,
+      "description": "Синти-поп и неон восьмидесятых.",
       "homepage": "https://www.radiorecord.ru/"
     }
   ]

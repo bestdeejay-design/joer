@@ -186,6 +186,10 @@ check("манифест подключён", /<link rel="manifest" href="manifes
 check("favicon — локальный файл", /<link rel="icon"[^>]*href="assets\/favicon.svg"/.test(html));
 check("og:image — абсолютный URL", /<meta property="og:image" content="https:\/\/joer.ru\/assets\/og-image.png">/.test(html));
 check("apple-touch-icon для iOS", /<link rel="apple-touch-icon" href="icons\/icon-192.png">/.test(html));
+check(
+  "hidden побеждает display компонентов (панели/меню не торчат)",
+  /\[hidden\]\s*\{\s*display:\s*none\s*!important/.test(read("css/base.css")),
+);
 
 /* =====================================================================
    2. Каталог: структура данных
