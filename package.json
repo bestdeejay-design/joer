@@ -6,6 +6,12 @@
   "description": "JOER — интернет-радио с адаптивной визуальной атмосферой (joer.ru)",
   "scripts": {
     "serve": "node scripts/serve.mjs",
-    "validate": "node scripts/validate-stations.mjs"
+    "validate": "node scripts/validate-stations.mjs",
+    "audit:cors": "node scripts/audit-cors.mjs",
+    "icons": "node scripts/make-icons.mjs",
+    "test": "node scripts/smoke-test.mjs"
+  },
+  "devDependencies": {
+    "jsdom": "^30.1.2"
   }
 }

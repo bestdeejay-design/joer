@@ -1,0 +1,939 @@
+#!/usr/bin/env node
+/**
+ * JOER — смоук-тест на jsdom (только dev-зависимость, в рантайме сайта не участвует).
+ *
+ * Поднимает index.html в jsdom, подсовывает реальные ES-модули приложения
+ * и проверяет, что сайт действительно собирается и рендерит каталог.
+ *
+ * Запуск: npm test
+ */
+import { JSDOM } from "jsdom";
+import { readFileSync, existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
+
+const ROOT = fileURLToPath(new URL("..", import.meta.url));
+const read = (rel) => readFileSync(path.join(ROOT, rel), "utf8");
+
+let passed = 0;
+let failed = 0;
+const failures = [];
+
+function check(name, condition, detail = "") {
+  if (condition) {
+    passed += 1;
+    console.log(`  ✅ ${name}`);
+  } else {
+    failed += 1;
+    failures.push(name);
+    console.log(`  ❌ ${name}${detail ? ` — ${detail}` : ""}`);
+  }
+}
+
+function section(title) {
+  console.log(`\n${title}`);
+}
+
+const tick = (ms = 0) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** Ждём условия: часы jsdom идут медленнее реальных, поэтому — опросом. */
+async function waitFor(predicate, timeout = 8000) {
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < timeout) {
+    if (predicate()) return true;
+    await tick(40);
+  }
+  return predicate();
+}
+
+/** Подделка 2D-контекста: записывает вызовы, ничего не рисуя. */
+function makeStubContext() {
+  const calls = [];
+  const gradient = { addColorStop() {} };
+  const target = {
+    calls,
+    globalAlpha: 1,
+    globalCompositeOperation: "source-over",
+    fillStyle: "",
+    strokeStyle: "",
+    lineWidth: 1,
+    setTransform() {},
+    clearRect() {},
+    save() {},
+    restore() {},
+    translate() {},
+    rotate() {},
+    beginPath() {},
+    moveTo() {},
+    lineTo() {},
+    closePath() {},
+    stroke() {},
+    fill() {},
+    arc() {},
+    ellipse() {},
+    rect() {},
+    fillRect() {},
+    createRadialGradient: () => gradient,
+    createLinearGradient: () => gradient,
+    drawImage() {},
+  };
+  return new Proxy(target, {
+    get(object, key) {
+      const value = object[key];
+      if (typeof value !== "function") return value;
+      return (...args) => {
+        calls.push(String(key));
+        return value(...args);
+      };
+    },
+  });
+}
+
+/** Минимальное окружение браузера для модулей приложения. */
+async function makeEnv(html, options = {}) {
+  const dom = new JSDOM(html, {
+    url: "https://joer.ru/",
+    pretendToBeVisual: true,
+  });
+  const { window } = dom;
+
+  window.matchMedia = (query) => ({
+    matches: Boolean(options.reduceMotion) && /reduced-motion/.test(query),
+    media: query,
+    onchange: null,
+    addEventListener() {},
+    removeEventListener() {},
+    addListener() {},
+    removeListener() {},
+    dispatchEvent: () => false,
+  });
+
+  if (options.canvas === "stub") {
+    const stub = makeStubContext();
+    window.HTMLCanvasElement.prototype.getContext = () => stub;
+    dom.canvasStub = stub;
+  } else {
+    window.HTMLCanvasElement.prototype.getContext = () => null;
+  }
+
+  const catalog = JSON.parse(read("data/stations.json"));
+  window.fetch = async (href) => {
+    const url = String(href).split("?")[0].replace(/^\.\//, "");
+    if (url.endsWith("stations.json")) {
+      return { ok: true, status: 200, json: async () => catalog };
+    }
+    if (url.startsWith("fail://")) {
+      throw new TypeError("Failed to fetch");
+    }
+    return { ok: false, status: 404, json: async () => ({}) };
+  };
+
+  const g = globalThis;
+  g.window = window;
+  g.document = window.document;
+  Object.defineProperty(g, "navigator", { value: window.navigator, configurable: true, writable: true });
+  g.localStorage = window.localStorage;
+  g.HTMLElement = window.HTMLElement;
+  g.HTMLAudioElement = window.HTMLAudioElement;
+  // Единое «царство» событий: классы приложения наследуют jsdom-EventTarget,
+  // а DOM-элементы принимают jsdom-события (в браузере это и так один набор).
+  g.Event = window.Event;
+  g.CustomEvent = window.CustomEvent;
+  g.EventTarget = window.EventTarget;
+  g.Node = window.Node;
+  g.requestAnimationFrame = window.requestAnimationFrame?.bind(window);
+  g.cancelAnimationFrame = window.cancelAnimationFrame?.bind(window);
+  g.getComputedStyle = window.getComputedStyle.bind(window);
+  g.fetch = window.fetch;
+
+  return { dom, window, document: window.document, catalog };
+}
+
+/** Сбрасываем кэш модулей, чтобы каждый сценарий стартовал с чистого листа. */
+let importCounter = 0;
+async function importFresh(rel) {
+  importCounter += 1;
+  const href = new URL(`../${rel}?t=${importCounter}`, import.meta.url).href;
+  return import(href);
+}
+
+/* =====================================================================
+   1. Статика: ресурсы локальны и существуют
+   ===================================================================== */
+section("1. Статика страницы");
+
+const html = read("index.html");
+// Сканируем только теги, которые грузят ресурсы (ссылки-навигация — не в счёт)
+const refs = [
+  ...html.matchAll(/<link[^>]*href="([^"]+)"/g),
+  ...html.matchAll(/<script[^>]*src="([^"]+)"/g),
+  ...html.matchAll(/<img[^>]*src="([^"]+)"/g),
+  ...html.matchAll(/<source[^>]*src="([^"]+)"/g),
+  ...html.matchAll(/<use[^>]*href="([^"]+)"/g),
+].map((m) => m[1]).filter((href) => !href.startsWith("data:") && !href.startsWith("#"));
+
+const external = refs.filter((href) => /^https?:|^\/\//.test(href));
+check("нет внешних ресурсов (CDN/шрифты/скрипты)", external.length === 0, external.join(", "));
+check(
+  "все локальные ресурсы существуют",
+  refs.every((href) => existsSync(path.join(ROOT, href.split("?")[0]))),
+  refs.filter((href) => !existsSync(path.join(ROOT, href.split("?")[0]))).join(", "),
+);
+check("есть viewport с viewport-fit=cover", /viewport-fit=cover/.test(html));
+check("lang=ru и data-theme на <html>", /<html lang="ru" data-theme="/.test(html));
+check("skip-link для клавиатуры", /class="skip-link"/.test(html));
+check("манифест подключён", /<link rel="manifest" href="manifest.webmanifest">/.test(html));
+check("favicon — локальный файл", /<link rel="icon"[^>]*href="assets\/favicon.svg"/.test(html));
+check("og:image — абсолютный URL", /<meta property="og:image" content="https:\/\/joer.ru\/assets\/og-image.png">/.test(html));
+check("apple-touch-icon для iOS", /<link rel="apple-touch-icon" href="icons\/icon-192.png">/.test(html));
+check(
+  "hidden побеждает display компонентов (панели/меню не торчат)",
+  /\[hidden\]\s*\{\s*display:\s*none\s*!important/.test(read("css/base.css")),
+);
+
+/* =====================================================================
+   2. Каталог: структура данных
+   ===================================================================== */
+section("2. Каталог данных");
+
+const data = JSON.parse(read("data/stations.json"));
+const perGroup = new Map();
+for (const st of data.stations) perGroup.set(st.groupId, (perGroup.get(st.groupId) ?? 0) + 1);
+
+check("5 групп", data.groups.length === 5, `фактически ${data.groups.length}`);
+check("станций ≥ 30", data.stations.length >= 30, `фактически ${data.stations.length}`);
+for (const g of data.groups) {
+  const n = perGroup.get(g.id) ?? 0;
+  check(`группа «${g.title}» ≥ 6 станций`, n >= 6, `фактически ${n}`);
+}
+check(
+  "все потоки https",
+  data.stations.every((st) => st.url.startsWith("https://")),
+);
+check(
+  "нет .pls/.m3u",
+  data.stations.every((st) => !/\.(pls|m3u8?)(\?|$)/i.test(st.url)),
+);
+check(
+  "заполнены description/homepage/genres/energy",
+  data.stations.every((st) => st.description && st.homepage && st.genres?.length && st.energy >= 1 && st.energy <= 5),
+);
+check(
+  "defaultStationId каждой группы существует",
+  data.groups.every((g) => data.stations.some((st) => st.id === g.defaultStationId)),
+);
+
+/* =====================================================================
+   3. Рендер каталога в jsdom
+   ===================================================================== */
+section("3. Рендер каталога");
+
+{
+  const env = await makeEnv(html);
+  await importFresh("js/app.js");
+  await tick(30);
+
+  const tabs = env.document.querySelectorAll(".group-tab");
+  const cards = env.document.querySelectorAll(".card");
+  check("отрисованы 5 табов групп", tabs.length === 5, `фактически ${tabs.length}`);
+  check("отрисованы станции первой группы", cards.length >= 6, `фактически ${cards.length}`);
+  check("активный таб помечен aria-pressed", env.document.querySelectorAll('.group-tab[aria-pressed="true"]').length === 1);
+  check("скелетон загрузки скрыт", env.document.getElementById("catalog-loading").hidden === true);
+  check("панель ошибки скрыта", env.document.getElementById("catalog-error").hidden === true);
+  check("в описании каталога есть число станций", /\d+/.test(env.document.getElementById("catalog-note").textContent));
+
+  // Фильтр по источнику (провайдеру)
+  const providerChips = [...env.document.querySelectorAll(".provider-tab")];
+  check("фильтр по источнику: чипы отрисованы", providerChips.length >= 2, `чипов ${providerChips.length}`);
+  check("фильтр по источнику: есть «Все источники»", providerChips.some((b) => b.textContent.includes("Все источники")));
+  const someProvider = providerChips.find((b) => b.dataset.provider);
+  if (someProvider) {
+    const pname = someProvider.dataset.provider;
+    someProvider.click();
+    const filtered = [...env.document.querySelectorAll(".card")];
+    check(
+      "фильтр по источнику: показывает только станции выбранного провайдера",
+      filtered.length > 0 && filtered.every((c) => c.querySelector(".card-provider")?.textContent === pname),
+      `провайдер «${pname}», карт ${filtered.length}`,
+    );
+    const allChip = providerChips.find((b) => !b.dataset.provider);
+    allChip?.click();
+    check(
+      "фильтр по источнику: «Все источники» снимает фильтр (карточки снова видны)",
+      allChip?.getAttribute("aria-pressed") === "true" && env.document.querySelectorAll(".card").length > 0,
+    );
+  }
+
+  // Переключение группы
+  const clubTab = [...tabs].find((t) => t.dataset.groupId === "club");
+  clubTab.click();
+  await tick(10);
+  const clubCards = env.document.querySelectorAll(".card");
+  const clubExpected = perGroup.get("club");
+  check("клик по табу меняет набор станций", clubCards.length === clubExpected, `фактически ${clubCards.length}, ждали ${clubExpected}`);
+  const clubTabAfter = env.document.querySelector('.group-tab[data-group-id="club"]');
+  check("aria-pressed переехал на новый таб", clubTabAfter?.getAttribute("aria-pressed") === "true");
+
+  // Избранное
+  const favButton = env.document.querySelector(".card-fav");
+  const cardId = favButton.closest(".card").dataset.stationId;
+  favButton.click();
+  await tick(10);
+  const stored = JSON.parse(env.window.localStorage.getItem("joer:favorites") || "[]");
+  check("избранное сохраняется в localStorage", stored.includes(cardId), `ключ joer:favorites = ${JSON.stringify(stored)}`);
+  check(
+    "избранная станция поднялась первой",
+    env.document.querySelector(".card").dataset.stationId === cardId,
+  );
+
+  env.window.close();
+}
+
+/* =====================================================================
+   4. Ошибка загрузки каталога
+   ===================================================================== */
+section("4. Ошибка загрузки");
+
+{
+  const env = await makeEnv(html);
+  env.window.fetch = async () => {
+    throw new TypeError("Failed to fetch");
+  };
+  globalThis.fetch = env.window.fetch;
+
+  const mod = await importFresh("js/catalog.js");
+  let caught = null;
+  try {
+    await mod.loadCatalog({ fetchImpl: env.window.fetch });
+  } catch (error) {
+    caught = error;
+  }
+  check("loadCatalog бросает понятную ошибку", Boolean(caught) && /Не удалось загрузить/i.test(caught.message), caught?.message);
+
+  // И UI-путь: bootstrap показывает панель ошибки, а не пустой экран
+  const env2 = await makeEnv(html);
+  env2.window.fetch = async () => {
+    throw new TypeError("Failed to fetch");
+  };
+  globalThis.fetch = env2.window.fetch;
+  await importFresh("js/app.js");
+  await tick(30);
+  check("UI показывает панель ошибки", env2.document.getElementById("catalog-error").hidden === false);
+  check(
+    "текст ошибки человекочитаемый",
+    env2.document.getElementById("catalog-error-text").textContent.length > 12,
+  );
+  env2.window.close();
+  env.window.close();
+}
+
+/* =====================================================================
+   5. Плеер: состояния, реконнект, громкость, идемпотентность
+   ===================================================================== */
+section("5. Плеер");
+
+/** Подделка <audio>: те же события, но без реального звука. */
+class FakeAudio extends EventTarget {
+  constructor() {
+    super();
+    this.src = "";
+    this.volume = 1;
+    this.muted = false;
+    this.preload = "";
+    this.error = null;
+    this.paused = true;
+    this.loadCount = 0;
+    this.playCount = 0;
+    this.history = [];
+    this.behavior = "ok"; // ok | error
+  }
+
+  load() {
+    this.loadCount += 1;
+    this.history.push(this.src);
+  }
+
+  play() {
+    this.playCount += 1;
+    if (this.behavior === "error") {
+      this.error = { code: 4 };
+      return Promise.reject(Object.assign(new Error("nope"), { name: "NotSupportedError" }));
+    }
+    this.paused = false;
+    setTimeout(() => this.dispatchEvent(new Event("playing")), 0);
+    return Promise.resolve();
+  }
+
+  pause() {
+    this.paused = true;
+    this.dispatchEvent(new Event("pause"));
+  }
+
+  removeAttribute() {
+    this.src = "";
+  }
+}
+
+{
+  const env = await makeEnv(html);
+  globalThis.Audio = FakeAudio;
+  const { Player, STATE } = await importFresh("js/player.js");
+  const stations = env.catalog.stations;
+  const lounge = stations.filter((s) => s.groupId === "lounge");
+
+  // 5.1 — успешный старт
+  const created = [];
+  const player = new Player({
+    createAudio: () => {
+      const audio = new FakeAudio();
+      created.push(audio);
+      return audio;
+    },
+    reconnectDelays: [5, 5, 5],
+    suggestNext: () => lounge[1],
+  });
+  await player.play(lounge[0]);
+  await tick(10);
+  check("после play состояние playing", player.state === STATE.PLAYING, `фактически ${player.state}`);
+  check("аудио получило прямой https-URL станции", created[0]?.src === lounge[0].url, `src=${created[0]?.src}`);
+
+  // 5.2 — идемпотентный повторный клик
+  await player.play(lounge[0]);
+  await tick(10);
+  check("повторный play той же станции не перезапускает поток", created[0].playCount === 1, `playCount=${created[0].playCount}`);
+
+  // 5.3 — громкость и mute переживают «перезагрузку»
+  player.setVolume(0.42);
+  player.setMuted(true);
+  check("joer:volume записан", env.window.localStorage.getItem("joer:volume") === "0.42", env.window.localStorage.getItem("joer:volume"));
+  check("joer:muted записан", env.window.localStorage.getItem("joer:muted") === "true");
+  const player2 = new Player({ createAudio: () => new FakeAudio(), reconnectDelays: [5, 5, 5] });
+  check("громкость восстанавливается из хранилища", player2.volume === 0.42, `${player2.volume}`);
+  check("mute восстанавливается из хранилища", player2.muted === true);
+
+  // 5.4 — мёртвый поток: зеркала → авто-переход → исчерпание
+  const broken = [];
+  const brokenPlayer = new Player({
+    createAudio: () => {
+      const audio = new FakeAudio();
+      audio.behavior = "error";
+      broken.push(audio);
+      return audio;
+    },
+    reconnectDelays: [5, 5, 5],
+    stallTimeout: 40,
+    maxAutoAdvances: 1,
+    suggestNext: () => lounge[2],
+  });
+  let exhausted = null;
+  brokenPlayer.addEventListener("exhausted", (event) => {
+    exhausted = event.detail;
+  });
+  await brokenPlayer.play(lounge[0]);
+  await tick(200);
+
+  const mirrors = Player.hostVariants(lounge[0].url);
+  const hist = broken[0].history;
+  check("первым пробуется основной URL", hist[0] === lounge[0].url, hist[0]);
+  check("при сбое перебираются зеркала SomaFM (ice1/4/6)", mirrors.slice(1).every((m) => hist.includes(m)), JSON.stringify(hist.slice(0, 4)));
+  check("после зеркал плеер сам включает следующую станцию", hist.includes(lounge[2].url), JSON.stringify(hist.slice(4)));
+  check("исчерпав фолбэки — состояние error и событие exhausted", brokenPlayer.state === STATE.ERROR && exhausted?.suggestion?.id === lounge[2].id, brokenPlayer.state);
+  check("лимит авто-переходов не даёт гонять по кругу", brokenPlayer.autoAdvances === 1, String(brokenPlayer.autoAdvances));
+
+  env.window.close();
+}
+
+/* =====================================================================
+   6. Клик по карточке запускает поток
+   ===================================================================== */
+section("6. Клик по карточке");
+
+{
+  const env = await makeEnv(html);
+  const created = [];
+  class TrackedAudio extends FakeAudio {
+    constructor() {
+      super();
+      created.push(this);
+    }
+  }
+  globalThis.Audio = TrackedAudio;
+  const app = await importFresh("js/app.js");
+  await tick(30);
+
+  const firstCard = env.document.querySelector(".card");
+  const expectedUrl = env.catalog.stations.find((s) => s.id === firstCard.dataset.stationId).url;
+  firstCard.querySelector(".card-play").click();
+  await tick(30);
+
+  check("плеер получил URL станции", created[0]?.src === expectedUrl, `src=${created[0]?.src}`);
+  check("плеер в состоянии playing", app.player.state === "playing", `фактически ${app.player.state}`);
+  check("карточка помечена как играющая", firstCard.classList.contains("is-playing"));
+  check("в плеере показано имя станции", env.document.getElementById("player-station").textContent === firstCard.querySelector(".card-name").textContent);
+  check("последняя станция сохранена", env.window.localStorage.getItem("joer:lastStation") === JSON.stringify(firstCard.dataset.stationId));
+
+  // Пауза по клику
+  env.document.getElementById("player-toggle").click();
+  await tick(10);
+  check("клик по play/pause ставит паузу", app.player.state === "paused", `фактически ${app.player.state}`);
+
+  // Станции из трёх разных групп запускаются кликом
+  for (const groupId of ["club", "romantic", "jazz"]) {
+    env.document.querySelector(`.group-tab[data-group-id="${groupId}"]`).click();
+    await tick(10);
+    const card = env.document.querySelector(".card");
+    const url = env.catalog.stations.find((s) => s.id === card.dataset.stationId).url;
+    card.querySelector(".card-play").click();
+    await tick(20);
+    const last = created[created.length - 1];
+    check(`клик по станции группы ${groupId} запускает её поток`, last?.src === url && app.player.state === "playing", `src=${last?.src} state=${app.player.state}`);
+  }
+
+  env.window.close();
+}
+
+/* =====================================================================
+   7. UI каталога: поиск, избранное, клавиатура
+   ===================================================================== */
+section("7. UI каталога");
+
+{
+  const env = await makeEnv(html);
+  globalThis.Audio = FakeAudio;
+  const app = await importFresh("js/app.js");
+  await tick(30);
+
+  const search = env.document.getElementById("search");
+  const typeInto = (value) => {
+    search.value = value;
+    search.dispatchEvent(new env.window.Event("input", { bubbles: true }));
+  };
+
+  const matches = (q) =>
+    env.catalog.stations.filter((s) =>
+      [s.name, s.provider, s.mood, ...s.genres].join(" ").toLowerCase().includes(q.toLowerCase()),
+    );
+
+  const t0 = performance.now();
+  typeInto("downtempo");
+  await tick(5);
+  const searchMs = performance.now() - t0;
+  const found = env.document.querySelectorAll(".card").length;
+  check("поиск фильтрует по жанру во всём каталоге", found === matches("downtempo").length, `${found} vs ${matches("downtempo").length}`);
+  check("поиск быстрее 50 мс", searchMs < 50, `${searchMs.toFixed(1)} мс`);
+  check("в поиске видны станции разных групп", found > 4, `найдено ${found}`);
+
+  typeInto("SomaFM");
+  await tick(5);
+  check("поиск по провайдеру", env.document.querySelectorAll(".card").length === matches("somafm").length);
+
+  typeInto("zzzz-нет-такого");
+  await tick(5);
+  check("пустое состояние поиска", /Ничего не нашлось/.test(env.document.getElementById("station-grid").textContent));
+  check("кнопка очистки видна", env.document.getElementById("search-clear").hidden === false);
+
+  app.clearSearch();
+  await tick(5);
+  check("очистка возвращает группу", env.document.querySelectorAll(".card").length >= 6);
+
+  // Избранное: сортировка и персистентность
+  const cards = [...env.document.querySelectorAll(".card")];
+  const pickSecond = cards[2];
+  pickSecond.querySelector(".card-fav").click();
+  await tick(5);
+  check("избранная станция первая в списке", env.document.querySelector(".card").dataset.stationId === pickSecond.dataset.stationId);
+  check(
+    "aria-pressed у избранного = true",
+    env.document.querySelector(".card-fav").getAttribute("aria-pressed") === "true",
+  );
+
+  // Клавиатура: стрелки переключают группы
+  const tabs = [...env.document.querySelectorAll(".group-tab")];
+  tabs[0].focus();
+  tabs[0].dispatchEvent(new env.window.KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
+  await tick(5);
+  const pressed = env.document.querySelector('.group-tab[aria-pressed="true"]');
+  check("стрелка вправо выбирает следующую группу", pressed?.dataset.groupId === tabs[1].dataset.groupId, pressed?.dataset.groupId);
+  check(
+    "после перерендера фокус остался на табах",
+    env.document.activeElement?.classList?.contains("group-tab") === true,
+    String(env.document.activeElement?.className),
+  );
+  check(
+    "ровер-фокус: только один таб в порядке Tab",
+    env.document.querySelectorAll('.group-tab[tabindex="0"]').length === 1,
+  );
+
+  // Enter на карточке запускает станцию
+  const card = env.document.querySelector(".card");
+  card.querySelector(".card-play").dispatchEvent(new env.window.KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+  card.querySelector(".card-play").click();
+  await tick(20);
+  check("активация карточки с клавиатуры запускает поток", app.player.state === "playing", app.player.state);
+
+  env.window.close();
+}
+
+/* =====================================================================
+   8. Темы: авто/ручной режим, персистентность
+   ===================================================================== */
+section("8. Темы");
+
+{
+  const env = await makeEnv(html);
+  globalThis.Audio = FakeAudio;
+  const app = await importFresh("js/app.js");
+  await tick(30);
+
+  const rootTheme = () => env.document.documentElement.dataset.theme;
+  const metaColor = () => env.document.querySelector('meta[name="theme-color"]').getAttribute("content");
+
+  check("тема по умолчанию — lounge", rootTheme() === "lounge", rootTheme());
+  check("meta theme-color соответствует теме", metaColor() === "#0b0f1e", metaColor());
+
+  env.document.querySelector('.group-tab[data-group-id="club"]').click();
+  await tick(10);
+  check("авто-режим: группа Club → тема club", rootTheme() === "club", rootTheme());
+  check("meta theme-color обновился", metaColor() === "#0a0612", metaColor());
+
+  env.document.querySelector('.group-tab[data-group-id="jazz"]').click();
+  await tick(10);
+  check("авто-режим: группа Jazz → тема velvet", rootTheme() === "velvet", rootTheme());
+
+  // Ручной выбор
+  app.themes.setMode("space");
+  await tick(10);
+  check("ручной выбор применяет тему", rootTheme() === "space", rootTheme());
+  check("ручной выбор сохранён", env.window.localStorage.getItem("joer:theme") === '"space"', env.window.localStorage.getItem("joer:theme"));
+
+  env.document.querySelector('.group-tab[data-group-id="romantic"]').click();
+  await tick(10);
+  check("ручная тема не сбрасывается при смене группы", rootTheme() === "space", rootTheme());
+
+  app.themes.setMode("auto");
+  await tick(10);
+  check("возврат в авто — тема снова следует за группой", rootTheme() === "romantic", rootTheme());
+  check("авто сохранено в хранилище", env.window.localStorage.getItem("joer:theme") === '"auto"');
+
+  // Селектор темы в UI
+  const picker = env.document.getElementById("theme-picker");
+  env.document.getElementById("theme-picker-btn").click();
+  await tick(5);
+  check("меню темы открывается", picker.dataset.open === "true" && env.document.getElementById("theme-menu").hidden === false);
+  env.document.querySelector('.theme-option[data-mode="club"]').click();
+  await tick(10);
+  check("выбор темы в меню меняет data-theme", rootTheme() === "club", rootTheme());
+  check("меню закрывается после выбора", picker.dataset.open === "false");
+  check(
+    "aria-checked отражает выбор",
+    env.document.querySelector('.theme-option[data-mode="club"]').getAttribute("aria-checked") === "true",
+  );
+
+  // Интенсивность атмосферы
+  const intensity = env.document.getElementById("intensity");
+  intensity.value = "40";
+  intensity.dispatchEvent(new env.window.Event("change", { bubbles: true }));
+  await tick(5);
+  check("интенсивность сохраняется", env.window.localStorage.getItem("joer:intensity") === "0.4", env.window.localStorage.getItem("joer:intensity"));
+  check("интенсивность в состоянии приложения", app.state.intensity === 0.4, String(app.state.intensity));
+  check("подпись интенсивности обновилась", env.document.getElementById("intensity-value").textContent === "40%");
+
+  // Ползунок должен visibly влиять на сцену: движок + проявленность (opacity)
+  const opacityAt40 = parseFloat(app.atmosphere.canvas.style.opacity);
+  check("интенсивность доходит до движка", app.atmosphere.intensity === 0.4, String(app.atmosphere.intensity));
+  check("ползунок меняет проявленность сцены", Math.abs(opacityAt40 - (0.22 + 0.4 * 0.78)) < 0.01, String(opacityAt40));
+
+  intensity.value = "0";
+  intensity.dispatchEvent(new env.window.Event("input", { bubbles: true }));
+  const opacityAt0 = parseFloat(app.atmosphere.canvas.style.opacity);
+  intensity.value = "100";
+  intensity.dispatchEvent(new env.window.Event("input", { bubbles: true }));
+  const opacityAt100 = parseFloat(app.atmosphere.canvas.style.opacity);
+  check("диапазон ползунка даёт явный визуальный контраст", opacityAt100 - opacityAt0 > 0.6, `${opacityAt0} → ${opacityAt100}`);
+  intensity.value = "75";
+  intensity.dispatchEvent(new env.window.Event("change", { bubbles: true }));
+
+  env.window.close();
+}
+
+/* =====================================================================
+   9. Атмосферный движок
+   ===================================================================== */
+section("9. Атмосфера");
+
+{
+  const env = await makeEnv(html, { canvas: "stub" });
+  globalThis.Audio = FakeAudio;
+  const app = await importFresh("js/app.js");
+  await tick(80);
+  const atmo = app.atmosphere;
+  const stub = env.dom.canvasStub;
+
+  check("движок получил 2D-контекст", atmo.disabled === false);
+  check("цикл rAF запущен", atmo.raf !== null);
+  check("DPR ограничен сверху", atmo.canvas.width <= Math.round((env.window.innerWidth || 1024) * 2));
+
+  const scenePairs = [
+    ["waves", "lounge"],
+    ["rings", "club"],
+    ["bokeh", "romantic"],
+    ["stars", "space"],
+    ["vinyl", "velvet"],
+  ];
+
+  for (const [sceneId, themeId] of scenePairs) {
+    const before = stub.calls.length;
+    atmo.setScene(sceneId);
+    atmo.draw(atmo.outgoing);
+    const drawn = stub.calls.length - before;
+    check(`сцена ${sceneId} (${themeId}) рисуется без ошибок`, drawn > 20, `операций: ${drawn}`);
+  }
+
+  // Кроссфейд при смене сцены
+  atmo.setScene("stars");
+  check("смена сцены начинает кроссфейд", atmo.fade === 0 && Boolean(atmo.outgoing));
+  const faded = await waitFor(() => atmo.fade === 1);
+  check("кроссфейд сцен завершается (800 мс времени сцены)", faded, `fade=${atmo.fade}`);
+
+  // Энергия и интенсивность влияют на живость
+  atmo.setIntensity(1);
+  atmo.setEnergy(5);
+  const fast = atmo.speed;
+  atmo.setEnergy(1);
+  const slow = atmo.speed;
+  check("энергия станции ускоряет сцену", fast > slow, `${fast.toFixed(2)} > ${slow.toFixed(2)}`);
+  atmo.setIntensity(0.1);
+  check("интенсивность пользователя замедляет сцену", atmo.speed < slow, `${atmo.speed.toFixed(2)} < ${slow.toFixed(2)}`);
+  atmo.setIntensity(0.75);
+
+  // Пауза «усыпляет» сцену, play возвращает
+  atmo.setPlayerState("playing");
+  await waitFor(() => atmo.motion > 0.6);
+  const lively = atmo.motion;
+  atmo.setPlayerState("paused");
+  await waitFor(() => atmo.motion < lively * 0.5);
+  const sleepy = atmo.motion;
+  check("на паузе сцена плавно замирает", sleepy < lively * 0.5, `${sleepy.toFixed(3)} < ${lively.toFixed(3)}`);
+  atmo.setPlayerState("playing");
+  await waitFor(() => atmo.motion > sleepy * 2);
+  check("после play сцена плавно оживает", atmo.motion > sleepy * 2, `motion=${atmo.motion.toFixed(3)} после ${sleepy.toFixed(3)}`);
+
+  // Скрытая вкладка — цикл остановлен
+  Object.defineProperty(env.document, "hidden", { value: true, configurable: true });
+  env.document.dispatchEvent(new env.window.Event("visibilitychange"));
+  check("в скрытой вкладке rAF остановлен", atmo.raf === null);
+  Object.defineProperty(env.document, "hidden", { value: false, configurable: true });
+  env.document.dispatchEvent(new env.window.Event("visibilitychange"));
+  check("при возврате на вкладку цикл возобновлён", atmo.raf !== null);
+
+  env.window.close();
+}
+
+/* =====================================================================
+   10. reduced-motion и аудио-реактивность
+   ===================================================================== */
+section("10. reduced-motion и реактивность");
+
+{
+  const env = await makeEnv(html, { canvas: "stub", reduceMotion: true });
+  globalThis.Audio = FakeAudio;
+  const app = await importFresh("js/app.js");
+  await tick(80);
+  const atmo = app.atmosphere;
+  check("reduced-motion: цикл не запускается", atmo.raf === null);
+  check("reduced-motion: рисуется статичная композиция", env.dom.canvasStub.calls.length > 20, `операций: ${env.dom.canvasStub.calls.length}`);
+  env.window.close();
+}
+
+{
+  const env = await makeEnv(html);
+  const { createReactivity, stationSupportsReactivity } = await importFresh("js/audio-reactivity.js");
+
+  check(
+    "каталог не заявляет CORS — реактивность не подключается без пробы",
+    env.catalog.stations.every((st) => stationSupportsReactivity(st) !== true),
+  );
+  check("без AudioContext возвращаем null", createReactivity({}, { onLevels() {}, onFallback() {} }) === null);
+
+  // AudioContext есть, но подключение к потоку падает → фолбэк, без звука не остаёмся
+  let fallbackReason = null;
+  globalThis.AudioContext = class {
+    constructor() {
+      this.state = "running";
+    }
+
+    createAnalyser() {
+      return { fftSize: 0, smoothingTimeConstant: 0, frequencyBinCount: 512, connect() {}, disconnect() {}, getByteFrequencyData() {} };
+    }
+
+    createMediaElementSource() {
+      throw new DOMException("cross-origin", "SecurityError");
+    }
+
+    get destination() {
+      return {};
+    }
+
+    close() {}
+  };
+  const controller = createReactivity({}, { onLevels() {}, onFallback: (error) => { fallbackReason = error; } });
+  check("ошибка Web Audio → немедленный фолбэк", controller === null && fallbackReason !== null, String(fallbackReason?.message));
+  delete globalThis.AudioContext;
+  env.window.close();
+}
+
+/* =====================================================================
+   11. Возврат: «Продолжить», группа, PWA-атрибуты
+   ===================================================================== */
+section("11. Возврат и PWA");
+
+{
+  const env = await makeEnv(html);
+  globalThis.Audio = FakeAudio;
+  const lastId = env.catalog.stations[3].id;
+  env.window.localStorage.setItem("joer:lastStation", JSON.stringify(lastId));
+  env.window.localStorage.setItem("joer:group", JSON.stringify(env.catalog.stations[3].groupId));
+
+  const app = await importFresh("js/app.js");
+  await tick(30);
+
+  const resume = env.document.getElementById("resume");
+  check("кнопка «Продолжить» показана при последней станции", resume.hidden === false);
+  check(
+    "в кнопке имя последней станции",
+    resume.querySelector("#resume-text").textContent.includes(env.catalog.stations[3].name),
+    resume.querySelector("#resume-text").textContent,
+  );
+  check("активная группа восстановлена", app.state.activeGroupId === env.catalog.stations[3].groupId, app.state.activeGroupId);
+
+  resume.click();
+  await tick(30);
+  check("«Продолжить» запускает станцию одним кликом", app.player.state === "playing", app.player.state);
+  check("после старта кнопка «Продолжить» скрывается", resume.hidden === true);
+
+  const manifest = JSON.parse(read("manifest.webmanifest"));
+  check("манифест: name/short_name/start_url", Boolean(manifest.name) && Boolean(manifest.short_name) && manifest.start_url === "./");
+  check("манифест: иконки 192/512/maskable", manifest.icons.length >= 3 && manifest.icons.some((i) => i.purpose === "maskable"));
+  check("манифест: файлы иконок существуют", manifest.icons.every((i) => existsSync(path.join(ROOT, i.src))));
+
+  env.window.close();
+}
+
+/* =====================================================================
+   12. Ритм, CORS-пробы, качество сцены (T-09)
+   ===================================================================== */
+section("12. Ритм, пробы CORS и качество");
+
+{
+  const env = await makeEnv(html);
+  const { stationSupportsReactivity, probeStreamCors, knownCorsSupport } = await importFresh("js/audio-reactivity.js");
+  const { Rhythm, SPECTRUM_BANDS } = await importFresh("js/rhythm.js");
+
+  // Три состояния поддержки CORS
+  check("cors: true → подключаться можно", stationSupportsReactivity({ cors: true }) === true);
+  check("cors: false → подключаться нельзя", stationSupportsReactivity({ cors: false }) === false);
+  check("без флага → неизвестно (нужна проба)", stationSupportsReactivity({}) === null);
+
+  // Проба потока: успех кэшируется, сеть молчит → false
+  let fetchCalls = 0;
+  globalThis.fetch = async () => {
+    fetchCalls += 1;
+    return {
+      ok: true,
+      status: 200,
+      type: "cors",
+      headers: { get: () => "*" },
+      body: { cancel() {} },
+    };
+  };
+  const first = await probeStreamCors("https://stream.example/ok");
+  const second = await probeStreamCors("https://stream.example/ok");
+  check("проба видит CORS и кэширует результат", first === true && second === true && fetchCalls === 1, `fetch×${fetchCalls}`);
+
+  globalThis.fetch = async () => {
+    fetchCalls += 1;
+    throw new TypeError("Failed to fetch");
+  };
+  const failing = await probeStreamCors("https://stream.example/fail");
+  check("сетевая ошибка пробы → без реактивности", failing === false);
+  check("отрицательный результат тоже кэшируется", knownCorsSupport("https://stream.example/fail") === false);
+  delete globalThis.fetch;
+
+  // Процедурный ритм: музыкальный паттерн, а не ровная синусоида
+  const rhythm = new Rhythm();
+  let sawKick = false;
+  let sawHat = false;
+  for (let i = 0; i < 240; i += 1) {
+    rhythm.update(1 / 60, { energy: 5, intensity: 1, motion: 1 });
+    if (rhythm.kick > 0.4) sawKick = true;
+    if (rhythm.hat > 0.15) sawHat = true;
+  }
+  check("псевдо-ритм бьёт киком", sawKick);
+  check("псевдо-ритм отбивает хэтом", sawHat);
+  check("темп в музыкальном диапазоне", rhythm.bpm > 120 && rhythm.bpm < 165, `bpm=${rhythm.bpm.toFixed(0)}`);
+  check("спектр синтезирован (32 полосы)", rhythm.spectrum.length === SPECTRUM_BANDS && rhythm.spectrum[0] > 0);
+
+  // Реактивный ритм: onset по басу поднимает beatCount
+  const live = new Rhythm();
+  for (let i = 0; i < 120; i += 1) {
+    const bass = i % 30 === 0 ? 1 : 0.08;
+    live.update(1 / 60, { reactive: true, bass, mid: 0.3, high: 0.2, motion: 1 });
+  }
+  check("onset-детектор ловит удары баса", live.beatCount > 2, `beatCount=${live.beatCount}`);
+  check("конверт кика реагирует на бас", live.kick > 0 || live.beatCount > 0);
+
+  // Качество и спокойный режим доходят до движка
+  const env2 = await makeEnv(html, { canvas: "stub" });
+  globalThis.Audio = FakeAudio;
+  const app = await importFresh("js/app.js");
+  await tick(60);
+  const atmo = app.atmosphere;
+  check("качество по умолчанию — med", atmo.quality === "med", atmo.quality);
+  atmo.setQuality("high");
+  check("setQuality переключает режим", atmo.quality === "high");
+  check("у high bloom глубже, чем у low", atmo.bloomConfig().strength > 0);
+  atmo.setQuality("low");
+  check("low — без bloom", atmo.bloomConfig().strength === 0);
+  atmo.setQuality("med");
+
+  atmo.setCalm(true);
+  check("спокойный режим включается", atmo.calm === true);
+  atmo.setCalm(false);
+  check("спокойный режим выключается", atmo.calm === false);
+
+  // Реактивность: уровни доходят до сцены
+  atmo.setLevels({ bass: 0.9, mid: 0.4, high: 0.2, overall: 0.6, spectrum: new Array(32).fill(0.5) });
+  check("уровни анализатора включают реактивность", atmo.reactive === true);
+  check("спектр анализатора уходит в ритм", atmo.rhythm.spectrumSource !== null);
+  atmo.setLevels(null);
+  check("нет уровней → снова процедурная сцена", atmo.reactive === false);
+
+  // Настройки качества и calm переживают перезагрузку
+  const quality = env2.document.getElementById("quality-label");
+  check("в меню есть блок качества", Boolean(quality));
+  env2.document.querySelector('[data-quality="low"]').click();
+  await tick(10);
+  check("выбор качества сохраняется", env2.window.localStorage.getItem("joer:quality") === '"low"', env2.window.localStorage.getItem("joer:quality"));
+  const calmBox = env2.document.getElementById("calm-mode");
+  calmBox.checked = true;
+  calmBox.dispatchEvent(new env2.window.Event("change", { bubbles: true }));
+  await tick(10);
+  check("спокойный режим сохраняется", env2.window.localStorage.getItem("joer:calm") === "true", env2.window.localStorage.getItem("joer:calm"));
+  check("спокойный режим доходит до движка", app.atmosphere.calm === true);
+
+  // Скрипт аудита CORS на месте
+  check("есть scripts/audit-cors.mjs", existsSync(path.join(ROOT, "scripts/audit-cors.mjs")));
+  check("npm-скрипт audit:cors объявлен", Boolean(JSON.parse(read("package.json")).scripts["audit:cors"]));
+
+  env2.window.close();
+  env.window.close();
+}
+
+/* =====================================================================
+   Итог
+   ===================================================================== */
+console.log(`\nИтого: ${passed} ок, ${failed} провалено.`);
+if (failed) {
+  console.log(`Провалено: ${failures.join("; ")}`);
+  process.exit(1);
+}

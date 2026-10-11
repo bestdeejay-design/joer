@@ -1,0 +1,29 @@
+/* Тема «Lounge» — неоновый вечер: фиолетовый + аква, медленные волны. */
+html[data-theme="lounge"] {
+  --bg-0: #0b0f1e;
+  --bg-1: #151c36;
+  --bg-2: #1c2447;
+
+  --glow-1: #8b7cf6;
+  --glow-2: #5eead4;
+  --glow-3: #1d2a5e;
+
+  --surface: #161d3a;
+  --surface-2: #1d2547;
+  --surface-3: #232c55;
+
+  --border: #2c3663;
+  --border-strong: #3d4a83;
+
+  --text: #e9ecff;
+  --text-muted: #a9b1d8;
+  --text-faint: #7b83a6;
+
+  --accent: #8b7cf6;
+  --accent-2: #5eead4;
+  --accent-soft: #8b7cf62e;
+  --accent-ink: #0b0f1e;
+  --ring: #a5b4fc;
+
+  --scene-speed: 1;
+}

@@ -1,0 +1,335 @@
+/* ============================================================
+   JOER — футер-плеер (T-03)
+   ============================================================ */
+
+.sprite {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+.player {
+  border-top: 1px solid color-mix(in oklab, var(--border) 80%, transparent);
+  background: color-mix(in oklab, var(--bg-0) 82%, transparent);
+  backdrop-filter: blur(22px) saturate(160%);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  box-shadow: 0 -22px 50px -34px rgb(0 0 0 / 0.9);
+  transition:
+    background-color var(--dur-theme) var(--ease-soft),
+    border-color var(--dur-theme) var(--ease-soft);
+}
+
+.player::before {
+  /* акцентная линия сверху — «эквалайзер» темы */
+  content: "";
+  display: block;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent), var(--accent-2), transparent);
+  opacity: 0.55;
+}
+
+.player-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3) var(--sp-4);
+  min-height: var(--player-h);
+  padding-block: var(--sp-3);
+}
+
+/* --- Кнопка play/pause --- */
+.player-toggle {
+  position: relative;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  color: var(--accent-ink);
+  background: linear-gradient(140deg, var(--accent), var(--accent-2));
+  box-shadow: 0 12px 30px -12px color-mix(in oklab, var(--accent) 90%, transparent);
+  transition: transform var(--dur-2) var(--ease-spring), box-shadow var(--dur-2) var(--ease-soft), opacity var(--dur-2);
+}
+
+.player-toggle:hover:not(:disabled) {
+  transform: scale(1.05);
+}
+
+.player-toggle:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.player-toggle:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.player-toggle-icon {
+  width: 22px;
+  height: 22px;
+  margin-left: 1px;
+}
+
+.player-toggle.is-playing .player-toggle-icon {
+  margin-left: 0;
+}
+
+.player-toggle-ring {
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 1px solid color-mix(in oklab, var(--accent) 60%, transparent);
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .player-toggle.is-playing .player-toggle-ring {
+    animation: ring-pulse 2.8s var(--ease-soft) infinite;
+  }
+
+  @keyframes ring-pulse {
+    0% { transform: scale(0.9); opacity: 0.75; }
+    70% { transform: scale(1.18); opacity: 0; }
+    100% { transform: scale(1.18); opacity: 0; }
+  }
+}
+
+/* --- Метаданные станции --- */
+.player-meta {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.player-station {
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tr-tight);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.player-sub {
+  color: var(--text-faint);
+  font-size: var(--fs-2xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.player-status {
+  color: var(--text-muted);
+  font-size: var(--fs-xs);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.player[data-state="loading"] .player-status,
+.player[data-state="error"] .player-status {
+  color: var(--accent-2);
+  font-family: var(--font-mono);
+}
+
+.player[data-state="error"] .player-status {
+  color: var(--err);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .player[data-state="loading"] .player-status::after {
+    content: "";
+    animation: dots 1.4s steps(4, end) infinite;
+  }
+
+  @keyframes dots {
+    0% { content: ""; }
+    25% { content: "."; }
+    50% { content: ".."; }
+    75% { content: "..."; }
+  }
+}
+
+/* --- Кнопки-иконки --- */
+.icon-btn {
+  display: grid;
+  place-items: center;
+  width: var(--touch);
+  height: var(--touch);
+  border-radius: var(--r-pill);
+  color: var(--text-muted);
+  transition: color var(--dur-2) var(--ease-soft), background-color var(--dur-2) var(--ease-soft), transform var(--dur-2) var(--ease-spring);
+}
+
+.icon-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.icon-btn:hover:not(:disabled) {
+  color: var(--text);
+  background: color-mix(in oklab, var(--surface-3) 70%, transparent);
+}
+
+.icon-btn:active:not(:disabled) {
+  transform: scale(0.92);
+}
+
+.icon-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.player-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+}
+
+/* --- Громкость --- */
+.player-volume {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex: 0 0 auto;
+}
+
+.player-more-btn {
+  display: none;
+}
+
+#player-mute .ico-muted {
+  display: none;
+}
+
+#player-mute.is-muted .ico-muted {
+  display: block;
+}
+
+#player-mute.is-muted .ico-volume {
+  display: none;
+}
+
+#player-mute.is-muted {
+  color: var(--err);
+}
+
+.volume {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 116px;
+  height: var(--touch);
+  background: transparent;
+  cursor: pointer;
+}
+
+.volume::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: var(--r-pill);
+  background: linear-gradient(90deg, var(--accent) var(--volume-fill, 80%), color-mix(in oklab, var(--border-strong) 90%, transparent) var(--volume-fill, 80%));
+}
+
+.volume::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -5px;
+  border-radius: 50%;
+  background: var(--text);
+  box-shadow: 0 0 0 4px color-mix(in oklab, var(--accent) 25%, transparent);
+  transition: box-shadow var(--dur-2) var(--ease-soft);
+}
+
+.volume:hover::-webkit-slider-thumb {
+  box-shadow: 0 0 0 6px color-mix(in oklab, var(--accent) 30%, transparent);
+}
+
+.volume::-moz-range-track {
+  height: 4px;
+  border-radius: var(--r-pill);
+  background: color-mix(in oklab, var(--border-strong) 90%, transparent);
+}
+
+.volume::-moz-range-progress {
+  height: 4px;
+  border-radius: var(--r-pill);
+  background: var(--accent);
+}
+
+.volume::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--text);
+}
+
+.volume-value {
+  min-width: 3.5ch;
+  color: var(--text-faint);
+  font-size: var(--fs-xs);
+  text-align: right;
+}
+
+/* --- Панель ошибки --- */
+.player-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) 0 var(--sp-4);
+  border-top: 1px solid color-mix(in oklab, var(--err) 26%, transparent);
+}
+
+.player-error-text {
+  color: color-mix(in oklab, var(--text) 80%, var(--err));
+  font-size: var(--fs-sm);
+  margin-right: auto;
+}
+
+.player-error-actions {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+
+/* --- Мобильная раскладка --- */
+@media (max-width: 760px) {
+  .player-controls .icon-btn:not(.player-more-btn) {
+    display: none;
+  }
+
+  .player.is-expanded .player-controls .icon-btn:not(.player-more-btn) {
+    display: grid;
+  }
+
+  .player-more-btn {
+    display: grid;
+    color: var(--text-muted);
+  }
+
+  .player-volume {
+    display: none;
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .player.is-expanded .player-volume {
+    display: flex;
+  }
+
+  .player.is-expanded .volume {
+    flex: 1 1 auto;
+    width: auto;
+  }
+
+  .player-bar {
+    flex-wrap: wrap;
+    min-height: 72px;
+  }
+}

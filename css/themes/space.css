@@ -1,0 +1,29 @@
+/* Тема «Space» — космос: синий + лёд, звёздное поле и туманности. */
+html[data-theme="space"] {
+  --bg-0: #05070f;
+  --bg-1: #0a1024;
+  --bg-2: #0c1329;
+
+  --glow-1: #60a5fa;
+  --glow-2: #7dd3fc;
+  --glow-3: #101a3a;
+
+  --surface: #0e152c;
+  --surface-2: #131c38;
+  --surface-3: #192345;
+
+  --border: #233056;
+  --border-strong: #36487c;
+
+  --text: #eaf2ff;
+  --text-muted: #a8b8da;
+  --text-faint: #7a8baf;
+
+  --accent: #60a5fa;
+  --accent-2: #7dd3fc;
+  --accent-soft: #60a5fa2e;
+  --accent-ink: #04070f;
+  --ring: #93c5fd;
+
+  --scene-speed: 0.55;
+}

@@ -1,0 +1,29 @@
+/* Тема «Club» — ночной клуб: маджента + циан, пульс и стаккато. */
+html[data-theme="club"] {
+  --bg-0: #0a0612;
+  --bg-1: #160a26;
+  --bg-2: #1c0b30;
+
+  --glow-1: #ff2ec4;
+  --glow-2: #22d3ee;
+  --glow-3: #2a0f45;
+
+  --surface: #1a0e2c;
+  --surface-2: #22123a;
+  --surface-3: #2a1748;
+
+  --border: #3a1f5c;
+  --border-strong: #553081;
+
+  --text: #f7ecff;
+  --text-muted: #c5a9de;
+  --text-faint: #9379ae;
+
+  --accent: #ff2ec4;
+  --accent-2: #22d3ee;
+  --accent-soft: #ff2ec42e;
+  --accent-ink: #17021c;
+  --ring: #ff8ae0;
+
+  --scene-speed: 1.35;
+}

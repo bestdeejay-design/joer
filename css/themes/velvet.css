@@ -1,0 +1,29 @@
+/* Тема «Velvet» — велюр и золото: бордо + золото, вращение винила. */
+html[data-theme="velvet"] {
+  --bg-0: #150a0c;
+  --bg-1: #1f0e11;
+  --bg-2: #261013;
+
+  --glow-1: #d4a24e;
+  --glow-2: #c9536b;
+  --glow-3: #33161c;
+
+  --surface: #241014;
+  --surface-2: #2c1418;
+  --surface-3: #371a1f;
+
+  --border: #4a252b;
+  --border-strong: #66353d;
+
+  --text: #fdeee4;
+  --text-muted: #dabaa9;
+  --text-faint: #a8877b;
+
+  --accent: #d4a24e;
+  --accent-2: #c9536b;
+  --accent-soft: #d4a24e2e;
+  --accent-ink: #1a0b06;
+  --ring: #e7c37f;
+
+  --scene-speed: 0.85;
+}

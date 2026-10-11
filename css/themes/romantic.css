@@ -1,0 +1,29 @@
+/* Тема «Romantic» — тёплый вечер: роза + янтарь, мягкое боке. */
+html[data-theme="romantic"] {
+  --bg-0: #1a0f14;
+  --bg-1: #25131d;
+  --bg-2: #2e1622;
+
+  --glow-1: #f472b6;
+  --glow-2: #fbbf24;
+  --glow-3: #3d1a2b;
+
+  --surface: #2a1520;
+  --surface-2: #331a27;
+  --surface-3: #3d2030;
+
+  --border: #4d2a3a;
+  --border-strong: #6b3c50;
+
+  --text: #ffeff5;
+  --text-muted: #ddb8c6;
+  --text-faint: #ab8695;
+
+  --accent: #f472b6;
+  --accent-2: #fbbf24;
+  --accent-soft: #f472b62e;
+  --accent-ink: #2a0714;
+  --ring: #f9a8d4;
+
+  --scene-speed: 0.75;
+}
