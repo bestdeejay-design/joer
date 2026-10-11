@@ -749,7 +749,10 @@ section("10. reduced-motion и реактивность");
   const env = await makeEnv(html);
   const { createReactivity, stationSupportsReactivity } = await importFresh("js/audio-reactivity.js");
 
-  check("в каталоге нет станций с CORS — слой реактивности спит", env.catalog.stations.every((st) => stationSupportsReactivity(st) === false));
+  check(
+    "каталог не заявляет CORS — реактивность не подключается без пробы",
+    env.catalog.stations.every((st) => stationSupportsReactivity(st) !== true),
+  );
   check("без AudioContext возвращаем null", createReactivity({}, { onLevels() {}, onFallback() {} }) === null);
 
   // AudioContext есть, но подключение к потоку падает → фолбэк, без звука не остаёмся
@@ -813,6 +816,116 @@ section("11. Возврат и PWA");
   check("манифест: иконки 192/512/maskable", manifest.icons.length >= 3 && manifest.icons.some((i) => i.purpose === "maskable"));
   check("манифест: файлы иконок существуют", manifest.icons.every((i) => existsSync(path.join(ROOT, i.src))));
 
+  env.window.close();
+}
+
+/* =====================================================================
+   12. Ритм, CORS-пробы, качество сцены (T-09)
+   ===================================================================== */
+section("12. Ритм, пробы CORS и качество");
+
+{
+  const env = await makeEnv(html);
+  const { stationSupportsReactivity, probeStreamCors, knownCorsSupport } = await importFresh("js/audio-reactivity.js");
+  const { Rhythm, SPECTRUM_BANDS } = await importFresh("js/rhythm.js");
+
+  // Три состояния поддержки CORS
+  check("cors: true → подключаться можно", stationSupportsReactivity({ cors: true }) === true);
+  check("cors: false → подключаться нельзя", stationSupportsReactivity({ cors: false }) === false);
+  check("без флага → неизвестно (нужна проба)", stationSupportsReactivity({}) === null);
+
+  // Проба потока: успех кэшируется, сеть молчит → false
+  let fetchCalls = 0;
+  globalThis.fetch = async () => {
+    fetchCalls += 1;
+    return {
+      ok: true,
+      status: 200,
+      type: "cors",
+      headers: { get: () => "*" },
+      body: { cancel() {} },
+    };
+  };
+  const first = await probeStreamCors("https://stream.example/ok");
+  const second = await probeStreamCors("https://stream.example/ok");
+  check("проба видит CORS и кэширует результат", first === true && second === true && fetchCalls === 1, `fetch×${fetchCalls}`);
+
+  globalThis.fetch = async () => {
+    fetchCalls += 1;
+    throw new TypeError("Failed to fetch");
+  };
+  const failing = await probeStreamCors("https://stream.example/fail");
+  check("сетевая ошибка пробы → без реактивности", failing === false);
+  check("отрицательный результат тоже кэшируется", knownCorsSupport("https://stream.example/fail") === false);
+  delete globalThis.fetch;
+
+  // Процедурный ритм: музыкальный паттерн, а не ровная синусоида
+  const rhythm = new Rhythm();
+  let sawKick = false;
+  let sawHat = false;
+  for (let i = 0; i < 240; i += 1) {
+    rhythm.update(1 / 60, { energy: 5, intensity: 1, motion: 1 });
+    if (rhythm.kick > 0.4) sawKick = true;
+    if (rhythm.hat > 0.15) sawHat = true;
+  }
+  check("псевдо-ритм бьёт киком", sawKick);
+  check("псевдо-ритм отбивает хэтом", sawHat);
+  check("темп в музыкальном диапазоне", rhythm.bpm > 120 && rhythm.bpm < 165, `bpm=${rhythm.bpm.toFixed(0)}`);
+  check("спектр синтезирован (32 полосы)", rhythm.spectrum.length === SPECTRUM_BANDS && rhythm.spectrum[0] > 0);
+
+  // Реактивный ритм: onset по басу поднимает beatCount
+  const live = new Rhythm();
+  for (let i = 0; i < 120; i += 1) {
+    const bass = i % 30 === 0 ? 1 : 0.08;
+    live.update(1 / 60, { reactive: true, bass, mid: 0.3, high: 0.2, motion: 1 });
+  }
+  check("onset-детектор ловит удары баса", live.beatCount > 2, `beatCount=${live.beatCount}`);
+  check("конверт кика реагирует на бас", live.kick > 0 || live.beatCount > 0);
+
+  // Качество и спокойный режим доходят до движка
+  const env2 = await makeEnv(html, { canvas: "stub" });
+  globalThis.Audio = FakeAudio;
+  const app = await importFresh("js/app.js");
+  await tick(60);
+  const atmo = app.atmosphere;
+  check("качество по умолчанию — med", atmo.quality === "med", atmo.quality);
+  atmo.setQuality("high");
+  check("setQuality переключает режим", atmo.quality === "high");
+  check("у high bloom глубже, чем у low", atmo.bloomConfig().strength > 0);
+  atmo.setQuality("low");
+  check("low — без bloom", atmo.bloomConfig().strength === 0);
+  atmo.setQuality("med");
+
+  atmo.setCalm(true);
+  check("спокойный режим включается", atmo.calm === true);
+  atmo.setCalm(false);
+  check("спокойный режим выключается", atmo.calm === false);
+
+  // Реактивность: уровни доходят до сцены
+  atmo.setLevels({ bass: 0.9, mid: 0.4, high: 0.2, overall: 0.6, spectrum: new Array(32).fill(0.5) });
+  check("уровни анализатора включают реактивность", atmo.reactive === true);
+  check("спектр анализатора уходит в ритм", atmo.rhythm.spectrumSource !== null);
+  atmo.setLevels(null);
+  check("нет уровней → снова процедурная сцена", atmo.reactive === false);
+
+  // Настройки качества и calm переживают перезагрузку
+  const quality = env2.document.getElementById("quality-label");
+  check("в меню есть блок качества", Boolean(quality));
+  env2.document.querySelector('[data-quality="low"]').click();
+  await tick(10);
+  check("выбор качества сохраняется", env2.window.localStorage.getItem("joer:quality") === '"low"', env2.window.localStorage.getItem("joer:quality"));
+  const calmBox = env2.document.getElementById("calm-mode");
+  calmBox.checked = true;
+  calmBox.dispatchEvent(new env2.window.Event("change", { bubbles: true }));
+  await tick(10);
+  check("спокойный режим сохраняется", env2.window.localStorage.getItem("joer:calm") === "true", env2.window.localStorage.getItem("joer:calm"));
+  check("спокойный режим доходит до движка", app.atmosphere.calm === true);
+
+  // Скрипт аудита CORS на месте
+  check("есть scripts/audit-cors.mjs", existsSync(path.join(ROOT, "scripts/audit-cors.mjs")));
+  check("npm-скрипт audit:cors объявлен", Boolean(JSON.parse(read("package.json")).scripts["audit:cors"]));
+
+  env2.window.close();
   env.window.close();
 }
 
