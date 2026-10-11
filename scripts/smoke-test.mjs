@@ -612,6 +612,21 @@ section("8. Темы");
   check("интенсивность в состоянии приложения", app.state.intensity === 0.4, String(app.state.intensity));
   check("подпись интенсивности обновилась", env.document.getElementById("intensity-value").textContent === "40%");
 
+  // Ползунок должен visibly влиять на сцену: движок + проявленность (opacity)
+  const opacityAt40 = parseFloat(app.atmosphere.canvas.style.opacity);
+  check("интенсивность доходит до движка", app.atmosphere.intensity === 0.4, String(app.atmosphere.intensity));
+  check("ползунок меняет проявленность сцены", Math.abs(opacityAt40 - (0.22 + 0.4 * 0.78)) < 0.01, String(opacityAt40));
+
+  intensity.value = "0";
+  intensity.dispatchEvent(new env.window.Event("input", { bubbles: true }));
+  const opacityAt0 = parseFloat(app.atmosphere.canvas.style.opacity);
+  intensity.value = "100";
+  intensity.dispatchEvent(new env.window.Event("input", { bubbles: true }));
+  const opacityAt100 = parseFloat(app.atmosphere.canvas.style.opacity);
+  check("диапазон ползунка даёт явный визуальный контраст", opacityAt100 - opacityAt0 > 0.6, `${opacityAt0} → ${opacityAt100}`);
+  intensity.value = "75";
+  intensity.dispatchEvent(new env.window.Event("change", { bubbles: true }));
+
   env.window.close();
 }
 

@@ -453,6 +453,7 @@ export class Atmosphere {
     this.reactive = false;
     this.quality = quality ?? (typeof navigator !== "undefined" && (navigator.deviceMemory ?? 8) <= 4 ? 0.6 : 1);
 
+    this.applyVisual();
     if (this.disabled) return;
 
     this.reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)") ?? { matches: false, addEventListener() {} };
@@ -511,7 +512,19 @@ export class Atmosphere {
   setIntensity(value) {
     const next = Number(value);
     this.intensity = Number.isFinite(next) ? Math.min(1, Math.max(0, next)) : 0.75;
+    this.applyVisual();
     if (this.reduceMotionValue) this.renderStatic();
+  }
+
+  /**
+   * Мгновенная видимая отдача от ползунка: интенсивность управляет
+   * «проявленностью» сцены (opacity canvas) — от почти незаметной дымки
+   * до полного свечения. Скорость и амплитуда меняются отдельно.
+   */
+  applyVisual() {
+    if (this.canvas?.style) {
+      this.canvas.style.opacity = (0.22 + this.intensity * 0.78).toFixed(3);
+    }
   }
 
   setPlayerState(state) {
@@ -595,9 +608,10 @@ export class Atmosphere {
     if (this.reduceMotionValue) this.renderStatic();
   }
 
-  /** Скорость сцены: энергия станции × интенсивность пользователя. */
+  /** Скорость сцены: энергия станции × интенсивность. Диапазон широкий, чтобы
+   *  ползунок читался: на нуле сцена почти стоит, на максимуме — полная живость. */
   get speed() {
-    return (0.55 + this.energy * 0.11) * (0.45 + this.intensity * 0.85);
+    return (0.5 + this.energy * 0.1) * (0.18 + this.intensity * 1.25);
   }
 
   /** Псевдо-ритм, когда аудио-реактивности нет. */
@@ -608,7 +622,7 @@ export class Atmosphere {
 
   updateMotion(dt) {
     const target = MOTION_BY_STATE[this.playerState] ?? 0.3;
-    const scaled = target * (0.35 + this.intensity * 0.65);
+    const scaled = target * (0.08 + this.intensity * 0.92);
     // Плавное приближение: никакого «скачка» при паузе/воспроизведении
     this.motion += (scaled - this.motion) * Math.min(1, dt * 1.6);
   }
