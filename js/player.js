@@ -32,6 +32,8 @@ export class Player extends EventTarget {
     suggestNext = () => null,
     reconnectDelays = RECONNECT_DELAYS,
     stallTimeout = STALL_TIMEOUT_MS,
+    autoAdvance = true,
+    maxAutoAdvances = 4,
   } = {}) {
     super();
     this.createAudio = createAudio || (() => new Audio());
@@ -39,10 +41,13 @@ export class Player extends EventTarget {
     this.suggestNext = suggestNext;
     this.reconnectDelays = reconnectDelays;
     this.stallTimeout = stallTimeout;
+    this.autoAdvance = autoAdvance;
+    this.maxAutoAdvances = maxAutoAdvances;
 
     this.state = STATE.IDLE;
     this.station = null;
     this.attempt = 0;
+    this.autoAdvances = 0;
     this.message = "";
 
     this.volume = storage.volume;
@@ -52,6 +57,8 @@ export class Player extends EventTarget {
     this.reconnectTimer = null;
     this.stallTimer = null;
     this.intentionalPause = false;
+    this.urlCandidates = [];
+    this.urlIndex = 0;
     this.listenersBound = false;
   }
 
@@ -67,8 +74,12 @@ export class Player extends EventTarget {
     }
 
     if (station) {
+      // Явный выбор пользователем — сбрасываем счётчик авто-переходов.
       this.station = station;
       this.attempt = 0;
+      this.autoAdvances = 0;
+      this.urlCandidates = Player.hostVariants(station.url);
+      this.urlIndex = 0;
       this.storage.lastStation = station.id;
       this.dispatchEvent(new CustomEvent("stationchange", { detail: { station } }));
     }
@@ -247,7 +258,10 @@ export class Player extends EventTarget {
   /** Старт потока. Бросает исключение, если не получилось. */
   start() {
     const audio = this.ensureAudio();
-    const url = this.attempt > 0 ? this.cacheBust(this.station.url) : this.station.url;
+    const candidates = this.urlCandidates.length ? this.urlCandidates : [this.station.url];
+    let url = candidates[this.urlIndex % candidates.length];
+    // Одно зеркало (не SomaFM) — на ретраях добавляем cache-bust.
+    if (candidates.length === 1 && this.attempt > 0) url = this.cacheBust(url);
     audio.src = url;
     audio.volume = this.volume;
     audio.muted = this.muted;
@@ -266,6 +280,14 @@ export class Player extends EventTarget {
     }
   }
 
+  /** Зеркала потока: у SomaFM несколько ice-хостов — при сбое пробуем другие. */
+  static hostVariants(url) {
+    const match = String(url).match(/^(https:\/\/)(ice\d+)(\.somafm\.com\/.*)$/i);
+    if (!match) return [url];
+    const alternates = ["ice1", "ice2", "ice4", "ice6"].filter((host) => host !== match[2].toLowerCase());
+    return [url, ...alternates.map((host) => match[1] + host + match[3])];
+  }
+
   handleFailure(error) {
     if (error?.name === "AbortError") return; // пауза во время загрузки — это нормально
     if (error?.name === "NotAllowedError") {
@@ -274,14 +296,39 @@ export class Player extends EventTarget {
     }
 
     if (this.attempt >= this.reconnectDelays.length) {
-      const suggestion = this.suggestNext(this.station);
-      this.setState(STATE.ERROR, "Поток не отвечает", { exhausted: true, suggestion });
-      this.dispatchEvent(new CustomEvent("exhausted", { detail: { station: this.station, suggestion } }));
+      const failed = this.station;
+      const suggestion = this.suggestNext(failed);
+
+      // Фолбэк: если поток мёртв, сами переходим на следующую станцию группы.
+      if (
+        this.autoAdvance &&
+        suggestion &&
+        suggestion.id !== failed?.id &&
+        this.autoAdvances < this.maxAutoAdvances
+      ) {
+        this.autoAdvances += 1;
+        this.station = suggestion;
+        this.attempt = 0;
+        this.urlCandidates = Player.hostVariants(suggestion.url);
+        this.urlIndex = 0;
+        this.storage.lastStation = suggestion.id;
+        this.setState(
+          STATE.LOADING,
+          `«${failed?.name ?? "Поток"}» молчит — включаю «${suggestion.name}» (${this.autoAdvances}/${this.maxAutoAdvances})…`,
+        );
+        this.dispatchEvent(new CustomEvent("stationchange", { detail: { station: suggestion, auto: true } }));
+        this.start().catch((retryError) => this.handleFailure(retryError));
+        return;
+      }
+
+      this.setState(STATE.ERROR, "Потоки в этой группе не отвечают", { exhausted: true, suggestion });
+      this.dispatchEvent(new CustomEvent("exhausted", { detail: { station: failed, suggestion, autoAdvances: this.autoAdvances } }));
       return;
     }
 
     const delay = this.reconnectDelays[this.attempt];
     this.attempt += 1;
+    this.urlIndex += 1; // следующий ретрай — на другом зеркале/с cache-bust
     this.setState(STATE.LOADING, `Переподключение ${this.attempt}/${this.reconnectDelays.length}…`, { retryIn: delay });
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null;

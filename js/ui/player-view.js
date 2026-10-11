@@ -87,7 +87,7 @@ export function createPlayerView({ root, player, onRetry, onNext, onPrevious }) 
     }
     if (el.errorText && state === STATE.ERROR) {
       el.errorText.textContent = exhausted
-        ? `${station?.name ?? "Поток"} не отвечает после трёх попыток.`
+        ? "Потоки этой группы не отвечают: попробовали зеркала и соседние станции. Нажмите «Повторить» или выберите другое настроение."
         : "Поток оборвался.";
     }
     if (el.skip) el.skip.hidden = !suggestion;

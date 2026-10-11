@@ -318,11 +318,13 @@ class FakeAudio extends EventTarget {
     this.paused = true;
     this.loadCount = 0;
     this.playCount = 0;
+    this.history = [];
     this.behavior = "ok"; // ok | error
   }
 
   load() {
     this.loadCount += 1;
+    this.history.push(this.src);
   }
 
   play() {
@@ -383,7 +385,7 @@ class FakeAudio extends EventTarget {
   check("громкость восстанавливается из хранилища", player2.volume === 0.42, `${player2.volume}`);
   check("mute восстанавливается из хранилища", player2.muted === true);
 
-  // 5.4 — нерабочий поток: 3 попытки и предложение следующей станции
+  // 5.4 — мёртвый поток: зеркала → авто-переход → исчерпание
   const broken = [];
   const brokenPlayer = new Player({
     createAudio: () => {
@@ -394,6 +396,7 @@ class FakeAudio extends EventTarget {
     },
     reconnectDelays: [5, 5, 5],
     stallTimeout: 40,
+    maxAutoAdvances: 1,
     suggestNext: () => lounge[2],
   });
   let exhausted = null;
@@ -401,10 +404,15 @@ class FakeAudio extends EventTarget {
     exhausted = event.detail;
   });
   await brokenPlayer.play(lounge[0]);
-  await tick(120);
-  check("после провала состояние error", brokenPlayer.state === STATE.ERROR, `фактически ${brokenPlayer.state}`);
-  check("сделано 4 попытки (1 + 3 реконнекта)", broken[0].loadCount === 4, `loadCount=${broken[0].loadCount}`);
-  check("событие exhausted содержит следующую станцию", exhausted?.suggestion?.id === lounge[2].id, JSON.stringify(exhausted?.suggestion?.id));
+  await tick(200);
+
+  const mirrors = Player.hostVariants(lounge[0].url);
+  const hist = broken[0].history;
+  check("первым пробуется основной URL", hist[0] === lounge[0].url, hist[0]);
+  check("при сбое перебираются зеркала SomaFM (ice1/4/6)", mirrors.slice(1).every((m) => hist.includes(m)), JSON.stringify(hist.slice(0, 4)));
+  check("после зеркал плеер сам включает следующую станцию", hist.includes(lounge[2].url), JSON.stringify(hist.slice(4)));
+  check("исчерпав фолбэки — состояние error и событие exhausted", brokenPlayer.state === STATE.ERROR && exhausted?.suggestion?.id === lounge[2].id, brokenPlayer.state);
+  check("лимит авто-переходов не даёт гонять по кругу", brokenPlayer.autoAdvances === 1, String(brokenPlayer.autoAdvances));
 
   env.window.close();
 }
