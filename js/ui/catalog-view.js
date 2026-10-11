@@ -170,6 +170,42 @@ function buildCard(station, { isFavorite, isCurrent, playing, group, onPlay, onT
   return article;
 }
 
+/**
+ * Фильтр по источнику (провайдеру).
+ * Позволяет показать только те станции, источник которых точно играет у пользователя.
+ * @param {HTMLElement} container
+ * @param {Array<{name:string,count:number}>} providers — список источников с количеством
+ * @param {{activeName?:string|null, onSelect:(name:string|null)=>void}} options
+ */
+export function renderProviders(container, providers, { activeName = null, onSelect } = {}) {
+  container.textContent = "";
+
+  const makeChip = (label, value, count, pressed) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "provider-tab";
+    button.setAttribute("aria-pressed", String(pressed));
+    button.tabIndex = pressed ? 0 : -1;
+    if (value) button.dataset.provider = value;
+    const text = document.createElement("span");
+    text.textContent = label;
+    button.append(text);
+    if (count != null) {
+      const badge = document.createElement("span");
+      badge.className = "group-tab-count";
+      badge.textContent = String(count);
+      button.append(badge);
+    }
+    button.addEventListener("click", () => onSelect?.(value));
+    return button;
+  };
+
+  container.append(makeChip("Все источники", null, null, activeName == null));
+  for (const provider of providers) {
+    container.append(makeChip(provider.name, provider.name, provider.count, provider.name === activeName));
+  }
+}
+
 /** Пустое состояние поиска. */
 export function renderEmpty(grid, query) {
   grid.textContent = "";

@@ -27,7 +27,8 @@
   display: none;
 }
 
-.group-tab {
+.group-tab,
+.provider-tab {
   position: relative;
   flex: 0 0 auto;
   display: inline-flex;
@@ -51,13 +52,15 @@
     transform var(--dur-2) var(--ease-spring);
 }
 
-.group-tab:hover {
+.group-tab:hover,
+.provider-tab:hover {
   color: var(--text);
   border-color: color-mix(in oklab, var(--accent) 40%, var(--border));
   transform: translateY(-1px);
 }
 
-.group-tab[aria-pressed="true"] {
+.group-tab[aria-pressed="true"],
+.provider-tab[aria-pressed="true"] {
   color: var(--accent-ink);
   border-color: transparent;
   background: linear-gradient(120deg, var(--accent), var(--accent-2));
@@ -73,7 +76,8 @@
   opacity: 0.75;
 }
 
-.group-tab[aria-pressed="false"] .group-tab-count {
+.group-tab[aria-pressed="false"] .group-tab-count,
+.provider-tab[aria-pressed="false"] .group-tab-count {
   background: color-mix(in oklab, var(--surface-3) 80%, transparent);
   color: var(--text-faint);
 }

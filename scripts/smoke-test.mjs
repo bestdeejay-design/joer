@@ -242,6 +242,28 @@ section("3. Рендер каталога");
   check("панель ошибки скрыта", env.document.getElementById("catalog-error").hidden === true);
   check("в описании каталога есть число станций", /\d+/.test(env.document.getElementById("catalog-note").textContent));
 
+  // Фильтр по источнику (провайдеру)
+  const providerChips = [...env.document.querySelectorAll(".provider-tab")];
+  check("фильтр по источнику: чипы отрисованы", providerChips.length >= 2, `чипов ${providerChips.length}`);
+  check("фильтр по источнику: есть «Все источники»", providerChips.some((b) => b.textContent.includes("Все источники")));
+  const someProvider = providerChips.find((b) => b.dataset.provider);
+  if (someProvider) {
+    const pname = someProvider.dataset.provider;
+    someProvider.click();
+    const filtered = [...env.document.querySelectorAll(".card")];
+    check(
+      "фильтр по источнику: показывает только станции выбранного провайдера",
+      filtered.length > 0 && filtered.every((c) => c.querySelector(".card-provider")?.textContent === pname),
+      `провайдер «${pname}», карт ${filtered.length}`,
+    );
+    const allChip = providerChips.find((b) => !b.dataset.provider);
+    allChip?.click();
+    check(
+      "фильтр по источнику: «Все источники» снимает фильтр (карточки снова видны)",
+      allChip?.getAttribute("aria-pressed") === "true" && env.document.querySelectorAll(".card").length > 0,
+    );
+  }
+
   // Переключение группы
   const clubTab = [...tabs].find((t) => t.dataset.groupId === "club");
   clubTab.click();

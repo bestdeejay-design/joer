@@ -6,7 +6,7 @@
  */
 
 import { loadCatalog, stationsOfGroup, nextInGroup, previousInGroup, searchStations } from "./catalog.js";
-import { renderGroups, renderStations, renderEmpty } from "./ui/catalog-view.js";
+import { renderGroups, renderStations, renderEmpty, renderProviders } from "./ui/catalog-view.js";
 import { setupRovingTabs, restoreTabFocus } from "./ui/controls.js";
 import { prefs, toggleFavorite } from "./storage.js";
 import { Player, STATE } from "./player.js";
@@ -18,6 +18,7 @@ import { createReactivity, stationSupportsReactivity } from "./audio-reactivity.
 
 const els = {
   groups: document.getElementById("groups"),
+  providers: document.getElementById("providers"),
   grid: document.getElementById("station-grid"),
   note: document.getElementById("catalog-note"),
   description: document.getElementById("group-description"),
@@ -37,6 +38,7 @@ const els = {
 const state = {
   catalog: null,
   activeGroupId: null,
+  activeProvider: null,
   query: "",
   intensity: prefs.intensity,
 };
@@ -207,7 +209,7 @@ function renderCatalog() {
 
   renderGroups(els.groups, catalog.groups, {
     counts,
-    activeId: searching ? null : activeGroupId,
+    activeId: searching || state.activeProvider ? null : activeGroupId,
     onSelect: (groupId) => {
       state.activeGroupId = groupId;
       prefs.group = groupId;
@@ -215,15 +217,43 @@ function renderCatalog() {
     },
   });
 
-  if (hadTabFocus && !searching) restoreTabFocus(els.groups, activeGroupId);
+  if (hadTabFocus && !searching && !state.activeProvider) restoreTabFocus(els.groups, activeGroupId);
 
-  const stations = searching ? searchStations(catalog.stations, query) : groupStations(activeGroupId);
+  // Фильтр по источнику: считаем провайдеров по всему каталогу.
+  const providerCounts = new Map();
+  for (const station of catalog.stations) {
+    providerCounts.set(station.provider, (providerCounts.get(station.provider) ?? 0) + 1);
+  }
+  const providers = [...providerCounts.entries()]
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "ru"));
+  renderProviders(els.providers, providers, {
+    activeName: state.activeProvider,
+    onSelect: (name) => {
+      state.activeProvider = name;
+      renderCatalog();
+    },
+  });
+
+  // База: поиск → весь каталог; выбран источник → его станции (поверх всех групп);
+  // иначе — станции активной группы. Затем сужаем по источнику, если он задан.
+  let stations;
+  if (searching) {
+    stations = searchStations(catalog.stations, query);
+  } else if (state.activeProvider) {
+    stations = catalog.stations.filter((s) => s.provider === state.activeProvider);
+  } else {
+    stations = groupStations(activeGroupId);
+  }
+  if (searching && state.activeProvider) {
+    stations = stations.filter((s) => s.provider === state.activeProvider);
+  }
   const group = catalog.groupById.get(activeGroupId);
 
   // В режиме «авто» мир следует за группой станций
   if (group) themes.setGroupTheme(group.theme);
 
-  if (!stations.length && searching) {
+  if (!stations.length) {
     els.grid.textContent = "";
     renderEmpty(els.grid, query.trim());
   } else {
@@ -243,13 +273,17 @@ function renderCatalog() {
   if (els.description) {
     els.description.textContent = searching
       ? "Ищем по всему каталогу — название, жанр, настроение или провайдер."
-      : group?.description ?? "";
+      : state.activeProvider
+        ? `Источник: ${state.activeProvider} — показаны только его станции.`
+        : group?.description ?? "";
   }
 
   if (els.note) {
     els.note.textContent = searching
       ? `Найдено ${stations.length} из ${catalog.stations.length} станций`
-      : `${stations.length} станций · ${catalog.stations.length} в каталоге · обновлено ${catalog.updatedAt}`;
+      : state.activeProvider
+        ? `${stations.length} станций · источник ${state.activeProvider} · всего ${catalog.stations.length} в каталоге`
+        : `${stations.length} станций · ${catalog.stations.length} в каталоге · обновлено ${catalog.updatedAt}`;
   }
 
   setLoading(false);

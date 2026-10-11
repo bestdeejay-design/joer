@@ -224,3 +224,5 @@ MVP = T-01…T-04 (сайт играет радио). Фирменная фич�
 
 > Исполнитель: добавляй строку после каждой задачи. «Коммит» — короткий хэш; «чем проверено» — конкретные шаги (команда/сценарий/устройство).
 | UI-фикс | 2026-10-11 | `[hidden]{display:none!important}` (панели/меню торчали из-за display в классах); +8 станций Radio Record (53 всего) | `[hidden]` в base.css | smoke 117/117, validate 53/53 |
+| Эффекты + станции | 2026-10-11 | Усилены сцены rings/bokeh/stars (альфа/размер) — club, romantic, space стали заметнее; +13 станций Radio Record (66 всего); фильтр по источнику | js/atmosphere.js, data/stations.json, js/ui/catalog-view.js, js/app.js | smoke 121/121, validate 66/66 |
+| Иностранные источники | 2026-10-11 | +14 станций от 8 новых зарубежных провайдеров (FIP, KEXP, KCRW, KUTX, WQXR, Radio Swiss, JAZZ.FM91, WBGO) — прямые https-потоки; всего 80 станций, 11 источников | data/stations.json, index.html | smoke 121/121, validate 80/80 |

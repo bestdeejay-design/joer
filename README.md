@@ -21,7 +21,7 @@
 | [`docs/CONCEPT.md`](docs/CONCEPT.md) | Продуктовая концепция и сценарии |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Техническая архитектура и модель данных |
 | [`docs/DESIGN.md`](docs/DESIGN.md) | Темы, атмосферный движок, UI-принципы |
-| [`data/stations.json`](data/stations.json) | Каталог радиостанций (53 шт.: SomaFM + Radio Paradise + Radio Record) |
+| [`data/stations.json`](data/stations.json) | Каталог радиостанций (80 шт., 11 источников: SomaFM, Radio Paradise, Radio Record, FIP, KEXP, KCRW, KUTX, WQXR, Radio Swiss, JAZZ.FM91, WBGO) |
 
 ## Стек
 

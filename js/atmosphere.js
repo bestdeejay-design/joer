@@ -181,24 +181,24 @@ const scenes = {
       for (const ring of this.rings) {
         ring.r += dt * (120 + speed * 130) * (0.4 + motion);
         ring.life = Math.min(1, ring.r / maxR);
-        const alpha = (1 - ring.life) * (0.22 + pulse * 0.12);
+        const alpha = (1 - ring.life) * (0.42 + pulse * 0.2);
         const color = mix(palette.accent, palette.accent2, ring.life);
         ctx.beginPath();
         ctx.ellipse(cx, cy, ring.r, ring.r * 0.42, 0, 0, Math.PI * 2);
         ctx.strokeStyle = rgba(color, alpha);
-        ctx.lineWidth = 2.4 * (1 - ring.life * 0.6);
+        ctx.lineWidth = 3.4 * (1 - ring.life * 0.6);
         ctx.stroke();
       }
 
       // Стаккато: короткие вертикальные штрихи, мягко и не чаще ритма
       const beat = (t * (1.6 + speed)) % 1;
-      const beatAlpha = Math.pow(1 - beat, 3) * motion * 0.4;
+      const beatAlpha = Math.pow(1 - beat, 3) * motion * 0.75;
       if (beatAlpha > 0.01) {
         for (const spark of this.sparkSeeds) {
           const x = spark.x * w;
           const y = spark.y * h * 0.9;
-          ctx.strokeStyle = rgba(spark.x > 0.5 ? palette.accent : palette.accent2, beatAlpha * 0.5);
-          ctx.lineWidth = 1.4;
+          ctx.strokeStyle = rgba(spark.x > 0.5 ? palette.accent : palette.accent2, beatAlpha * 0.9);
+          ctx.lineWidth = 2.2;
           ctx.beginPath();
           ctx.moveTo(x, y);
           ctx.lineTo(x, y + spark.h * (0.3 + beat));
@@ -209,8 +209,8 @@ const scenes = {
       // Центральный пульс
       const glow = sprites?.[0];
       if (glow) {
-        const size = (160 + pulse * 120) * (0.8 + motion * 0.5);
-        ctx.globalAlpha = 0.3 + pulse * 0.2;
+        const size = (200 + pulse * 150) * (0.85 + motion * 0.5);
+        ctx.globalAlpha = 0.45 + pulse * 0.25;
         ctx.drawImage(glow, cx - size / 2, cy - size / 2, size, size);
       }
 
@@ -246,12 +246,12 @@ const scenes = {
         if (orb.x > 1.2) orb.x = -0.2;
 
         const breathe = 0.75 + Math.sin(t * 0.4 + orb.phase) * 0.16;
-        const size = orb.r * 2.6 * breathe;
+        const size = orb.r * 3.1 * breathe;
         const x = orb.x * w;
         const y = orb.y * h;
         const sprite = sprites?.[orb.warm ? 0 : 1];
         if (!sprite) continue;
-        ctx.globalAlpha = (orb.r > 70 ? 0.1 : 0.16) * (0.5 + motion * 0.7);
+        ctx.globalAlpha = (orb.r > 70 ? 0.2 : 0.34) * (0.6 + motion * 0.7);
         ctx.drawImage(sprite, x - size / 2, y - size / 2, size, size);
       }
       ctx.globalAlpha = 1;
@@ -293,8 +293,8 @@ const scenes = {
         cloud.x = (cloud.x + cloud.drift * dt * motion + 1) % 1;
         const sprite = sprites?.[cloud.warm ? 1 : 2];
         if (!sprite) continue;
-        const size = cloud.r * 2;
-        ctx.globalAlpha = 0.1 + pulse * 0.04;
+        const size = cloud.r * 2.1;
+        ctx.globalAlpha = 0.2 + pulse * 0.08;
         ctx.drawImage(sprite, cloud.x * w - size / 2, cloud.y * h - size / 2, size, size);
       }
 
@@ -303,8 +303,8 @@ const scenes = {
           star.x -= layer.depth * 0.006 * dt * motion * 6;
           if (star.x < -0.02) star.x = 1.02;
           const twinkle = 0.45 + Math.sin(t * (0.6 + layer.depth) + star.phase) * 0.35 * star.twinkle;
-          const alpha = Math.max(0, twinkle) * (0.35 + motion * 0.5);
-          const size = layer.size * (1 + pulse * 0.3);
+          const alpha = Math.max(0, twinkle) * (0.7 + motion * 0.5);
+          const size = layer.size * 1.35 * (1 + pulse * 0.3);
           ctx.fillStyle = rgba(layer.depth > 0.8 ? palette.accent2 : [255, 255, 255], alpha);
           ctx.beginPath();
           ctx.arc(star.x * w, star.y * h, size, 0, Math.PI * 2);

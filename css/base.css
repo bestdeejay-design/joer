@@ -197,3 +197,12 @@ p {
     scroll-behavior: auto !important;
   }
 }
+
+/* Ряд фильтра по источнику — вторичный, чуть мельче табов настроений. */
+.groups-providers {
+  margin-block-start: -0.25rem;
+}
+
+.groups-providers .provider-tab {
+  font-size: 0.82rem;
+}
