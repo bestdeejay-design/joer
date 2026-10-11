@@ -1,5 +1,5 @@
 /* ============================================================
-   JOER — элементы хедера: тема-заглушка → селектор темы (T-05)
+   JOER — хедер: селектор темы и интенсивности (T-05)
    ============================================================ */
 
 .header-tools {
@@ -13,24 +13,229 @@
   }
 }
 
-.theme-stub {
+.theme-picker {
+  position: relative;
+}
+
+.theme-picker-btn {
   display: inline-flex;
   align-items: center;
   gap: var(--sp-2);
-  padding: 6px var(--sp-3);
+  min-height: var(--touch);
+  padding: 0 var(--sp-3);
   border-radius: var(--r-pill);
-  border: 1px solid color-mix(in oklab, var(--border) 80%, transparent);
-  background: color-mix(in oklab, var(--surface) 45%, transparent);
+  border: 1px solid color-mix(in oklab, var(--border) 85%, transparent);
+  background: color-mix(in oklab, var(--surface) 55%, transparent);
   color: var(--text-muted);
-  font-size: var(--fs-xs);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  transition:
+    color var(--dur-2) var(--ease-soft),
+    border-color var(--dur-2) var(--ease-soft),
+    background-color var(--dur-2) var(--ease-soft);
 }
 
-.theme-stub-dot {
-  width: 8px;
-  height: 8px;
+.theme-picker-btn:hover {
+  color: var(--text);
+  border-color: color-mix(in oklab, var(--accent) 45%, var(--border));
+}
+
+.theme-picker[data-open="true"] .theme-picker-btn {
+  color: var(--text);
+  border-color: color-mix(in oklab, var(--accent) 60%, transparent);
+}
+
+.theme-picker-dot {
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
-  background: linear-gradient(120deg, var(--accent), var(--accent-2));
-  box-shadow: 0 0 10px color-mix(in oklab, var(--accent) 70%, transparent);
+  background: linear-gradient(130deg, var(--accent), var(--accent-2));
+  box-shadow: 0 0 12px color-mix(in oklab, var(--accent) 60%, transparent);
+}
+
+.theme-picker-caret {
+  width: 16px;
+  height: 16px;
+  color: var(--text-faint);
+  transition: transform var(--dur-2) var(--ease-out);
+}
+
+.theme-picker[data-open="true"] .theme-picker-caret {
+  transform: rotate(180deg);
+}
+
+/* --- Меню --- */
+.theme-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: var(--z-overlay);
+  display: grid;
+  gap: 2px;
+  width: min(290px, calc(100vw - 32px));
+  padding: var(--sp-2);
+  border-radius: var(--r-lg);
+  border: 1px solid color-mix(in oklab, var(--border-strong) 70%, transparent);
+  background: color-mix(in oklab, var(--bg-1) 92%, transparent);
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  box-shadow: var(--shadow-3);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .theme-menu {
+    animation: menu-in var(--dur-2) var(--ease-out);
+  }
+
+  @keyframes menu-in {
+    from {
+      opacity: 0;
+      transform: translateY(-6px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+
+.theme-option {
+  display: grid;
+  grid-template-columns: 30px 1fr;
+  align-items: center;
+  gap: var(--sp-3);
+  min-height: var(--touch);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-md);
+  text-align: left;
+  color: var(--text-muted);
+  transition: background-color var(--dur-2) var(--ease-soft), color var(--dur-2) var(--ease-soft);
+}
+
+.theme-option:hover {
+  background: color-mix(in oklab, var(--surface-2) 80%, transparent);
+  color: var(--text);
+}
+
+.theme-option[aria-checked="true"] {
+  background: color-mix(in oklab, var(--accent) 16%, transparent);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent) 40%, transparent);
+}
+
+.theme-option-dot {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.14);
+}
+
+.theme-option-dot--auto {
+  background: conic-gradient(#8b7cf6, #22d3ee, #fbbf24, #c9536b, #8b7cf6);
+}
+
+.theme-option-dot--lounge { background: linear-gradient(130deg, #8b7cf6, #5eead4); }
+.theme-option-dot--club { background: linear-gradient(130deg, #ff2ec4, #22d3ee); }
+.theme-option-dot--romantic { background: linear-gradient(130deg, #f472b6, #fbbf24); }
+.theme-option-dot--space { background: linear-gradient(130deg, #60a5fa, #7dd3fc); }
+.theme-option-dot--velvet { background: linear-gradient(130deg, #d4a24e, #c9536b); }
+
+.theme-option-text {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.theme-option-text strong {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+}
+
+.theme-option-text small {
+  color: var(--text-faint);
+  font-size: var(--fs-2xs);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* --- Интенсивность атмосферы --- */
+.theme-intensity {
+  margin-top: var(--sp-2);
+  padding: var(--sp-3) var(--sp-3) var(--sp-2);
+  border-top: 1px solid color-mix(in oklab, var(--border) 70%, transparent);
+}
+
+.theme-intensity-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-1);
+}
+
+.theme-intensity-head label {
+  color: var(--text-muted);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.02em;
+}
+
+.theme-intensity-head output {
+  color: var(--accent-2);
+  font-size: var(--fs-xs);
+}
+
+.theme-intensity input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 28px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.theme-intensity input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: var(--r-pill);
+  background: linear-gradient(90deg, var(--accent) var(--volume-fill, 75%), color-mix(in oklab, var(--border-strong) 90%, transparent) var(--volume-fill, 75%));
+}
+
+.theme-intensity input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -5px;
+  border-radius: 50%;
+  background: var(--text);
+  box-shadow: 0 0 0 4px color-mix(in oklab, var(--accent) 25%, transparent);
+}
+
+.theme-intensity input[type="range"]::-moz-range-track {
+  height: 4px;
+  border-radius: var(--r-pill);
+  background: color-mix(in oklab, var(--border-strong) 90%, transparent);
+}
+
+.theme-intensity input[type="range"]::-moz-range-progress {
+  height: 4px;
+  border-radius: var(--r-pill);
+  background: var(--accent);
+}
+
+.theme-intensity input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--text);
+}
+
+.theme-intensity-hint {
+  margin-top: var(--sp-1);
+  color: var(--text-faint);
+  font-size: var(--fs-2xs);
+  line-height: 1.45;
 }

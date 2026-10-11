@@ -11,6 +11,8 @@ import { setupRovingTabs, restoreTabFocus } from "./ui/controls.js";
 import { prefs, toggleFavorite } from "./storage.js";
 import { Player, STATE } from "./player.js";
 import { createPlayerView } from "./ui/player-view.js";
+import { ThemeManager } from "./themes.js";
+import { createThemePicker } from "./ui/theme-picker.js";
 
 const els = {
   groups: document.getElementById("groups"),
@@ -31,7 +33,25 @@ const state = {
   catalog: null,
   activeGroupId: null,
   query: "",
+  intensity: prefs.intensity,
 };
+
+/* ------------------------------------------------------------------
+   Темы и атмосфера
+   ------------------------------------------------------------------ */
+
+const themes = new ThemeManager();
+
+createThemePicker({
+  root: document.getElementById("theme-picker"),
+  manager: themes,
+  initialIntensity: state.intensity,
+  onIntensity: (value, commit) => {
+    state.intensity = value;
+    if (commit) prefs.intensity = value;
+    document.dispatchEvent(new CustomEvent("joer:intensitychange", { detail: { value } }));
+  },
+});
 
 /* ------------------------------------------------------------------
    Плеер
@@ -155,6 +175,9 @@ function renderCatalog() {
   const stations = searching ? searchStations(catalog.stations, query) : groupStations(activeGroupId);
   const group = catalog.groupById.get(activeGroupId);
 
+  // В режиме «авто» мир следует за группой станций
+  if (group) themes.setGroupTheme(group.theme);
+
   if (!stations.length && searching) {
     els.grid.textContent = "";
     renderEmpty(els.grid, query.trim());
@@ -269,4 +292,4 @@ els.retry?.addEventListener("click", () => {
 syncVolumeUI();
 bootstrap();
 
-export { player, state, renderCatalog, clearSearch };
+export { player, state, themes, renderCatalog, clearSearch };

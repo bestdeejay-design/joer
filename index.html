@@ -21,6 +21,20 @@
 <link rel="stylesheet" href="css/components/card.css">
 <link rel="stylesheet" href="css/components/states.css">
 <link rel="stylesheet" href="css/components/player.css">
+<link rel="stylesheet" href="css/themes/lounge.css">
+<link rel="stylesheet" href="css/themes/club.css">
+<link rel="stylesheet" href="css/themes/romantic.css">
+<link rel="stylesheet" href="css/themes/space.css">
+<link rel="stylesheet" href="css/themes/velvet.css">
+<script>
+  /* Сохранённая тема применяется до первой отрисовки — без «вспышки» чужой палитры. */
+  try {
+    var saved = JSON.parse(localStorage.getItem("joer:theme") || '"auto"');
+    if (saved && saved !== "auto") document.documentElement.dataset.theme = saved;
+  } catch (e) {
+    /* localStorage недоступен — остаёмся на теме по умолчанию */
+  }
+</script>
 </head>
 <body>
 
@@ -74,10 +88,58 @@
       </div>
 
       <div class="header-tools">
-        <!-- T-05: селектор темы (сейчас — заглушка с текущей темой) -->
-        <div class="theme-stub" aria-hidden="true">
-          <span class="theme-stub-dot"></span>
-          <span class="theme-stub-label" data-current-theme>Lounge</span>
+        <div class="theme-picker" id="theme-picker" data-open="false">
+          <button class="theme-picker-btn" id="theme-picker-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="theme-menu">
+            <span class="theme-picker-dot" aria-hidden="true"></span>
+            <span class="theme-picker-label" id="theme-picker-label">Авто</span>
+            <svg class="theme-picker-caret" aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M7 10.2l5 5 5-5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+
+          <div class="theme-menu" id="theme-menu" role="menu" aria-label="Оформление и атмосфера" hidden>
+            <button class="theme-option" type="button" role="menuitemradio" aria-checked="true" data-mode="auto">
+              <span class="theme-option-dot theme-option-dot--auto" aria-hidden="true"></span>
+              <span class="theme-option-text">
+                <strong>Авто</strong>
+                <small>мир меняется вместе с настроением</small>
+              </span>
+            </button>
+
+            <button class="theme-option" type="button" role="menuitemradio" aria-checked="false" data-mode="lounge">
+              <span class="theme-option-dot theme-option-dot--lounge" aria-hidden="true"></span>
+              <span class="theme-option-text"><strong>Lounge</strong><small>неоновый вечер</small></span>
+            </button>
+
+            <button class="theme-option" type="button" role="menuitemradio" aria-checked="false" data-mode="club">
+              <span class="theme-option-dot theme-option-dot--club" aria-hidden="true"></span>
+              <span class="theme-option-text"><strong>Club</strong><small>ночной клуб</small></span>
+            </button>
+
+            <button class="theme-option" type="button" role="menuitemradio" aria-checked="false" data-mode="romantic">
+              <span class="theme-option-dot theme-option-dot--romantic" aria-hidden="true"></span>
+              <span class="theme-option-text"><strong>Romantic</strong><small>тёплый вечер</small></span>
+            </button>
+
+            <button class="theme-option" type="button" role="menuitemradio" aria-checked="false" data-mode="space">
+              <span class="theme-option-dot theme-option-dot--space" aria-hidden="true"></span>
+              <span class="theme-option-text"><strong>Chill &amp; Space</strong><small>космос</small></span>
+            </button>
+
+            <button class="theme-option" type="button" role="menuitemradio" aria-checked="false" data-mode="velvet">
+              <span class="theme-option-dot theme-option-dot--velvet" aria-hidden="true"></span>
+              <span class="theme-option-text"><strong>Jazz &amp; Retro</strong><small>велюр и золото</small></span>
+            </button>
+
+            <div class="theme-intensity">
+              <div class="theme-intensity-head">
+                <label for="intensity">Интенсивность атмосферы</label>
+                <output class="mono" id="intensity-value" for="intensity">75%</output>
+              </div>
+              <input id="intensity" type="range" min="0" max="100" step="5" value="75" aria-describedby="intensity-hint">
+              <p class="theme-intensity-hint" id="intensity-hint">Насколько живым будет фон: от почти статичного до полного движения.</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
