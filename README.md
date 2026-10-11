@@ -21,7 +21,7 @@
 | [`docs/CONCEPT.md`](docs/CONCEPT.md) | Продуктовая концепция и сценарии |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Техническая архитектура и модель данных |
 | [`docs/DESIGN.md`](docs/DESIGN.md) | Темы, атмосферный движок, UI-принципы |
-| [`data/stations.json`](data/stations.json) | Каталог радиостанций (34 шт., SomaFM + Radio Paradise) |
+| [`data/stations.json`](data/stations.json) | Каталог радиостанций (45 шт.: SomaFM + Radio Paradise + Radio Record) |
 
 ## Стек
 
