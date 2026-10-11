@@ -34,6 +34,8 @@ export function renderGroups(container, groups, { counts = new Map(), activeId, 
     button.className = "group-tab";
     button.dataset.groupId = group.id;
     button.setAttribute("aria-pressed", String(group.id === activeId));
+    // Ровер-фокус: в группе табов одна остановка Tab, дальше — стрелки.
+    button.tabIndex = group.id === activeId || (!activeId && group === groups[0]) ? 0 : -1;
     button.title = group.subtitle || group.title;
 
     const label = document.createElement("span");

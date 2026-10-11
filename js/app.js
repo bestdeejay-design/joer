@@ -1,12 +1,13 @@
 /**
  * JOER — точка входа.
  *
- * Связывает каталог (T-01), плеер (T-03) и UI. Темы (T-05) и атмосферный
- * движок (T-06) подключаются своими модулями.
+ * Связывает каталог (T-01), плеер (T-03) и UI каталога (T-04).
+ * Темы (T-05) и атмосферный движок (T-06) подключаются своими модулями.
  */
 
-import { loadCatalog, stationsOfGroup, nextInGroup, previousInGroup } from "./catalog.js";
-import { renderGroups, renderStations } from "./ui/catalog-view.js";
+import { loadCatalog, stationsOfGroup, nextInGroup, previousInGroup, searchStations } from "./catalog.js";
+import { renderGroups, renderStations, renderEmpty } from "./ui/catalog-view.js";
+import { setupRovingTabs, restoreTabFocus } from "./ui/controls.js";
 import { prefs, toggleFavorite } from "./storage.js";
 import { Player, STATE } from "./player.js";
 import { createPlayerView } from "./ui/player-view.js";
@@ -22,61 +23,61 @@ const els = {
   retry: document.getElementById("catalog-retry"),
   player: document.getElementById("player"),
   volume: document.getElementById("player-volume"),
+  search: document.getElementById("search"),
+  searchClear: document.getElementById("search-clear"),
 };
 
 const state = {
   catalog: null,
   activeGroupId: null,
+  query: "",
 };
 
 /* ------------------------------------------------------------------
    Плеер
    ------------------------------------------------------------------ */
 
-function currentGroupStations() {
+function groupStations(groupId) {
   if (!state.catalog) return [];
-  return stationsOfGroup(state.catalog.stations, state.activeGroupId);
+  return stationsOfGroup(state.catalog.stations, groupId);
+}
+
+function currentGroupStations() {
+  return groupStations(state.activeGroupId);
+}
+
+function playNeighbour(direction) {
+  const list = currentGroupStations();
+  const pick = direction > 0 ? nextInGroup(list, player.station?.id) : previousInGroup(list, player.station?.id);
+  if (pick) player.play(pick);
 }
 
 const player = new Player({
   suggestNext: (station) => {
     if (!station) return null;
-    const list = stationsOfGroup(state.catalog?.stations ?? [], station.groupId);
-    const next = nextInGroup(list, station.id);
+    const next = nextInGroup(groupStations(station.groupId), station.id);
     return next && next.id !== station.id ? next : null;
   },
 });
 
-const playerView = createPlayerView({
+createPlayerView({
   root: els.player,
   player,
   onRetry: () => player.resume(),
-  onNext: () => {
-    const next = nextInGroup(currentGroupStations(), player.station?.id);
-    if (next) player.play(next);
-  },
-  onPrevious: () => {
-    const prev = previousInGroup(currentGroupStations(), player.station?.id);
-    if (prev) player.play(prev);
-  },
+  onNext: () => playNeighbour(1),
+  onPrevious: () => playNeighbour(-1),
 });
 
 player.bindMediaSession({
   play: () => player.resume(),
   pause: () => player.pause(),
   stop: () => player.stop(),
-  next: () => {
-    const next = nextInGroup(currentGroupStations(), player.station?.id);
-    if (next) player.play(next);
-  },
-  previous: () => {
-    const prev = previousInGroup(currentGroupStations(), player.station?.id);
-    if (prev) player.play(prev);
-  },
+  next: () => playNeighbour(1),
+  previous: () => playNeighbour(-1),
 });
 
-player.addEventListener("change", (event) => {
-  syncVolumeUI(event.detail);
+player.addEventListener("change", () => {
+  syncVolumeUI();
   syncActiveCards();
 });
 
@@ -90,12 +91,9 @@ player.addEventListener("stationchange", () => {
   }
 });
 
-/** Громкость: значение + «заполнение» трека слайдера. */
-function syncVolumeUI({ volume, muted } = {}) {
-  const value = typeof volume === "number" ? volume : player.volume;
-  const percent = Math.round((muted ? 0 : value) * 100);
-  if (els.volume) els.volume.style.setProperty("--volume-fill", `${Math.round(value * 100)}%`);
-  return percent;
+/** Громкость: «заполнение» трека слайдера (для webkit-градиента). */
+function syncVolumeUI() {
+  els.volume?.style.setProperty("--volume-fill", `${Math.round(player.volume * 100)}%`);
 }
 
 /** Подсветка текущей станции в сетке без полного перерендера. */
@@ -110,7 +108,7 @@ function syncActiveCards() {
 }
 
 /* ------------------------------------------------------------------
-   Каталог
+   Каталог и поиск
    ------------------------------------------------------------------ */
 
 function setLoading(isLoading) {
@@ -135,41 +133,57 @@ function hideError() {
 }
 
 function renderCatalog() {
-  const { catalog, activeGroupId } = state;
+  const { catalog, activeGroupId, query } = state;
   if (!catalog) return;
 
-  const counts = new Map(
-    catalog.groups.map((group) => [group.id, stationsOfGroup(catalog.stations, group.id).length]),
-  );
+  const searching = query.trim().length > 0;
+  const hadTabFocus = els.groups.contains(document.activeElement);
+
+  const counts = new Map(catalog.groups.map((group) => [group.id, groupStations(group.id).length]));
 
   renderGroups(els.groups, catalog.groups, {
     counts,
-    activeId: activeGroupId,
+    activeId: searching ? null : activeGroupId,
     onSelect: (groupId) => {
       state.activeGroupId = groupId;
       renderCatalog();
     },
   });
 
+  if (hadTabFocus && !searching) restoreTabFocus(els.groups, activeGroupId);
+
+  const stations = searching ? searchStations(catalog.stations, query) : groupStations(activeGroupId);
   const group = catalog.groupById.get(activeGroupId);
-  const stations = stationsOfGroup(catalog.stations, activeGroupId);
 
-  renderStations(els.grid, stations, {
-    groupById: catalog.groupById,
-    favoriteIds: prefs.favorites,
-    currentId: player.station?.id ?? null,
-    playing: player.state === STATE.PLAYING,
-    onPlay: (station) => player.play(station),
-    onToggleFavorite: (station) => {
-      toggleFavorite(station.id);
-      renderCatalog();
-    },
-  });
-
-  if (els.description) els.description.textContent = group?.description ?? "";
-  if (els.note) {
-    els.note.textContent = `${stations.length} станций · ${catalog.stations.length} в каталоге · обновлено ${catalog.updatedAt}`;
+  if (!stations.length && searching) {
+    els.grid.textContent = "";
+    renderEmpty(els.grid, query.trim());
+  } else {
+    renderStations(els.grid, stations, {
+      groupById: catalog.groupById,
+      favoriteIds: prefs.favorites,
+      currentId: player.station?.id ?? null,
+      playing: player.state === STATE.PLAYING,
+      onPlay: (station) => player.play(station),
+      onToggleFavorite: (station) => {
+        toggleFavorite(station.id);
+        renderCatalog();
+      },
+    });
   }
+
+  if (els.description) {
+    els.description.textContent = searching
+      ? "Ищем по всему каталогу — название, жанр, настроение или провайдер."
+      : group?.description ?? "";
+  }
+
+  if (els.note) {
+    els.note.textContent = searching
+      ? `Найдено ${stations.length} из ${catalog.stations.length} станций`
+      : `${stations.length} станций · ${catalog.stations.length} в каталоге · обновлено ${catalog.updatedAt}`;
+  }
+
   setLoading(false);
   hideError();
   syncActiveCards();
@@ -188,15 +202,60 @@ async function bootstrap() {
 }
 
 /* ------------------------------------------------------------------
+   Поиск: мгновенный фильтр
+   ------------------------------------------------------------------ */
+
+els.search?.addEventListener("input", (event) => {
+  state.query = event.target.value;
+  if (els.searchClear) els.searchClear.hidden = !event.target.value;
+  renderCatalog();
+});
+
+function clearSearch() {
+  state.query = "";
+  if (els.search) els.search.value = "";
+  if (els.searchClear) els.searchClear.hidden = true;
+  renderCatalog();
+}
+
+els.searchClear?.addEventListener("click", () => {
+  clearSearch();
+  els.search?.focus();
+});
+
+els.search?.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    event.preventDefault();
+    clearSearch();
+    els.search.blur();
+  }
+});
+
+setupRovingTabs(els.groups, {
+  onNavigate: (groupId) => {
+    state.activeGroupId = groupId;
+    renderCatalog();
+  },
+});
+
+/* ------------------------------------------------------------------
    Горячие клавиши
    ------------------------------------------------------------------ */
 
 document.addEventListener("keydown", (event) => {
   const target = event.target;
   const typing = target instanceof HTMLElement && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName);
+
+  if (event.key === "/" && !typing) {
+    event.preventDefault();
+    els.search?.focus();
+    els.search?.select();
+    return;
+  }
+
   if (typing || event.metaKey || event.ctrlKey || event.altKey) return;
 
-  if (event.code === "Space" && !target.closest("button, a, [role='button']")) {
+  if (event.code === "Space" && !target.closest?.("button, a, [role='button']")) {
     event.preventDefault();
     player.toggle();
   }
@@ -207,7 +266,7 @@ els.retry?.addEventListener("click", () => {
   bootstrap();
 });
 
-syncVolumeUI({});
+syncVolumeUI();
 bootstrap();
 
-export { player, playerView, state };
+export { player, state, renderCatalog, clearSearch };

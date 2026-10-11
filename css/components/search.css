@@ -1,0 +1,116 @@
+/* ============================================================
+   JOER — поиск по каталогу (T-04)
+   ============================================================ */
+
+.search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1 1 220px;
+  max-width: 380px;
+  min-width: 0;
+  margin-left: auto;
+  height: var(--touch);
+  padding-inline: var(--sp-3);
+  border-radius: var(--r-pill);
+  border: 1px solid color-mix(in oklab, var(--border) 85%, transparent);
+  background: color-mix(in oklab, var(--surface) 55%, transparent);
+  transition:
+    border-color var(--dur-2) var(--ease-soft),
+    background-color var(--dur-2) var(--ease-soft),
+    box-shadow var(--dur-2) var(--ease-soft);
+}
+
+.search:focus-within {
+  border-color: color-mix(in oklab, var(--accent) 60%, transparent);
+  background: color-mix(in oklab, var(--surface-2) 75%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in oklab, var(--accent) 14%, transparent);
+}
+
+.search-icon {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  color: var(--text-faint);
+}
+
+.search input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  margin-inline: var(--sp-2);
+  border: 0;
+  background: none;
+  color: var(--text);
+  font-size: var(--fs-sm);
+}
+
+.search input::placeholder {
+  color: var(--text-faint);
+}
+
+.search input:focus {
+  outline: none;
+}
+
+/* убираем нативный крестик — есть свой */
+.search input::-webkit-search-cancel-button,
+.search input::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.search-clear {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  color: var(--text-faint);
+  transition: color var(--dur-2) var(--ease-soft), background-color var(--dur-2) var(--ease-soft);
+}
+
+.search-clear:hover {
+  color: var(--text);
+  background: color-mix(in oklab, var(--surface-3) 80%, transparent);
+}
+
+.search-clear svg {
+  width: 16px;
+  height: 16px;
+}
+
+.search-hint {
+  flex: 0 0 auto;
+  padding: 1px 6px;
+  border-radius: var(--r-xs);
+  border: 1px solid color-mix(in oklab, var(--border-strong) 80%, transparent);
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+}
+
+.search:focus-within .search-hint {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .search-hint {
+    display: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .header-inner {
+    flex-wrap: wrap;
+    padding-block: var(--sp-2);
+  }
+
+  .search {
+    order: 3;
+    flex-basis: 100%;
+    max-width: none;
+    margin-left: 0;
+  }
+}

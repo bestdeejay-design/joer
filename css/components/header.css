@@ -2,6 +2,17 @@
    JOER — элементы хедера: тема-заглушка → селектор темы (T-05)
    ============================================================ */
 
+.header-tools {
+  flex: 0 0 auto;
+  margin-left: var(--sp-3);
+}
+
+@media (max-width: 760px) {
+  .header-tools {
+    margin-left: auto;
+  }
+}
+
 .theme-stub {
   display: inline-flex;
   align-items: center;
