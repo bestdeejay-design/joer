@@ -30,7 +30,7 @@
 ## Локальный запуск
 
 ```bash
-npm run serve       # python3 -m http.server 8080  →  http://localhost:8080
+npm run serve       # локальный статический сервер (Node)  →  http://localhost:8080
 npm run validate    # проверка всех потоков из data/stations.json
 ```
 

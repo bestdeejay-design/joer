@@ -1,0 +1,8 @@
+# Нормализация переводов строк
+* text=auto eol=lf
+
+# Бинарные типы
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff2 binary

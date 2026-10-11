@@ -48,6 +48,7 @@ MVP = T-01…T-04 (сайт играет радио). Фирменная фич�
 - Добрать станции до ≥ 6 в каждой группе (Lounge, Club, Romantic, Chill & Space, Jazz & Retro). Приоритет — проверенные кураторские потоки (SomaFM channels.json, Radio Paradise и аналоги).
 - Каждая новая станция: https, прямой URL (без .pls/.m3u), заполнены `energy`, `mood`, `genres`, `description`, `homepage`.
 - Прогнать `npm run validate` — 0 ошибок; обновить `updatedAt`.
+- Где брать новые потоки: SomaFM — `https://api.somafm.com/channels.json` (выбрать канал → `<id>130.pls` содержит прямой URL в строке `File1`; использовать https-хост ice2/ice6); предпочитать провайдеров, публично допускающих линкование потоков.
 
 Критерии приёмки:
 
