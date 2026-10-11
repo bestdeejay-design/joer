@@ -7,6 +7,10 @@
   "scripts": {
     "serve": "node scripts/serve.mjs",
     "validate": "node scripts/validate-stations.mjs",
-    "icons": "node scripts/make-icons.mjs"
+    "icons": "node scripts/make-icons.mjs",
+    "test": "node scripts/smoke-test.mjs"
+  },
+  "devDependencies": {
+    "jsdom": "^30.1.2"
   }
 }
