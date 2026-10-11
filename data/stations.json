@@ -227,6 +227,34 @@
       "homepage": "https://somafm.com/u80s/"
     },
     {
+      "id": "somafm-defcon",
+      "groupId": "club",
+      "name": "DEF CON Radio",
+      "provider": "SomaFM",
+      "url": "https://ice2.somafm.com/defcon-128-aac",
+      "codec": "aac",
+      "bitrate": 128,
+      "genres": ["techno", "electro", "dark"],
+      "mood": "драйвовый",
+      "energy": 5,
+      "description": "Техно и электро для тех, кто ещё не закрыл ноутбук.",
+      "homepage": "https://somafm.com/defcon/"
+    },
+    {
+      "id": "somafm-digitalis",
+      "groupId": "club",
+      "name": "Digitalis",
+      "provider": "SomaFM",
+      "url": "https://ice2.somafm.com/digitalis-128-aac",
+      "codec": "aac",
+      "bitrate": 128,
+      "genres": ["electronica", "indie", "experimental"],
+      "mood": "гибридный",
+      "energy": 4,
+      "description": "Там, где цифровой звук встречается с живым: электроника с инди-характером.",
+      "homepage": "https://somafm.com/digitalis/"
+    },
+    {
       "id": "somafm-bossa",
       "groupId": "romantic",
       "name": "Bossa Beyond",
@@ -281,6 +309,34 @@
       "energy": 2,
       "description": "Мягкая сторона Radio Paradise.",
       "homepage": "https://radioparadise.com/"
+    },
+    {
+      "id": "somafm-fluid",
+      "groupId": "romantic",
+      "name": "Fluid",
+      "provider": "SomaFM",
+      "url": "https://ice2.somafm.com/fluid-128-aac",
+      "codec": "aac",
+      "bitrate": 128,
+      "genres": ["trip-hop", "downtempo"],
+      "mood": "обволакивающий",
+      "energy": 2,
+      "description": "Плавный трип-хоп и даунтемпо — тёплое ночное звучание для двоих.",
+      "homepage": "https://somafm.com/fluid/"
+    },
+    {
+      "id": "somafm-covers",
+      "groupId": "romantic",
+      "name": "Covers",
+      "provider": "SomaFM",
+      "url": "https://ice2.somafm.com/covers-128-aac",
+      "codec": "aac",
+      "bitrate": 128,
+      "genres": ["covers", "acoustic", "soul"],
+      "mood": "ностальгический",
+      "energy": 2,
+      "description": "Знакомые песни в неожиданных и очень тёплых переложениях.",
+      "homepage": "https://somafm.com/covers/"
     },
     {
       "id": "somafm-dronezone",
@@ -435,6 +491,34 @@
       "energy": 2,
       "description": "Поп-музыка 60-х: звук, пойманный в эфире.",
       "homepage": "https://somafm.com/insound/"
+    },
+    {
+      "id": "somafm-thistle",
+      "groupId": "jazz",
+      "name": "ThistleRadio",
+      "provider": "SomaFM",
+      "url": "https://ice2.somafm.com/thistle-128-aac",
+      "codec": "aac",
+      "bitrate": 128,
+      "genres": ["folk", "americana", "celtic"],
+      "mood": "сказочный",
+      "energy": 2,
+      "description": "Современный фолк и кельтские мотивы — музыка старых историй.",
+      "homepage": "https://somafm.com/thistle/"
+    },
+    {
+      "id": "somafm-bootliquor",
+      "groupId": "jazz",
+      "name": "Boot Liquor",
+      "provider": "SomaFM",
+      "url": "https://ice2.somafm.com/bootliquor-128-aac",
+      "codec": "aac",
+      "bitrate": 128,
+      "genres": ["americana", "roots", "country"],
+      "mood": "уютный",
+      "energy": 2,
+      "description": "Американа и рутс-музыка для неспешного вечера на веранде.",
+      "homepage": "https://somafm.com/bootliquor/"
     }
   ]
 }

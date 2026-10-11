@@ -30,8 +30,9 @@
 ## Локальный запуск
 
 ```bash
-npm run serve       # локальный статический сервер (Node)  →  http://localhost:8080
-npm run validate    # проверка всех потоков из data/stations.json
+npm run serve                # локальный статический сервер (Node)  →  http://localhost:8080
+npm run validate             # проверка всех потоков из data/stations.json (нужен интернет)
+npm run validate -- --offline # только структура каталога, без сетевых запросов
 ```
 
 ## История
