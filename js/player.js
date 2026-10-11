@@ -60,6 +60,8 @@ export class Player extends EventTarget {
     this.urlCandidates = [];
     this.urlIndex = 0;
     this.listenersBound = false;
+    /** CORS-режим <audio>: нужен для опциональной Web Audio-реактивности. */
+    this.corsMode = false;
   }
 
   /* --------------------------------------------------------------
@@ -177,6 +179,28 @@ export class Player extends EventTarget {
     return undefined;
   }
 
+  /**
+   * CORS-режим для текущего и будущих <audio>.
+   * Ставится ДО назначения src: ресурс должен быть запрошен в режиме cors,
+   * иначе Web Audio-граф даст тишину. Ложь — обычный запрос без графа.
+   */
+  setCorsMode(enabled) {
+    this.corsMode = Boolean(enabled);
+    if (this.audio) {
+      this.audio.crossOrigin = this.corsMode ? "anonymous" : null;
+    }
+  }
+
+  /**
+   * Свежий <audio> с текущим CORS-режимом — но без запуска потока.
+   * Нужен перед построением/сносом Web Audio-графа: элемент, живший в графе,
+   * после закрытия AudioContext навсегда немеет, его нельзя переиспользовать.
+   */
+  freshAudio() {
+    this.detachAudio();
+    return this.ensureAudio();
+  }
+
   destroy() {
     this.clearTimers();
     this.detachAudio();
@@ -192,6 +216,7 @@ export class Player extends EventTarget {
     audio.preload = "none";
     audio.volume = this.volume;
     audio.muted = this.muted;
+    audio.crossOrigin = this.corsMode ? "anonymous" : null;
     this.bindAudio(audio);
     this.audio = audio;
     return audio;
@@ -201,6 +226,12 @@ export class Player extends EventTarget {
     if (!this.audio) return;
     for (const [type, handler] of this.audioHandlers ?? []) {
       this.audio.removeEventListener(type, handler);
+    }
+    try {
+      // Старый элемент больше никому не нужен — гасим, чтобы не тянул поток.
+      this.audio.pause?.();
+    } catch {
+      /* элемент мог быть уничтожен */
     }
     this.audio = null;
     this.audioHandlers = null;
@@ -262,6 +293,8 @@ export class Player extends EventTarget {
     let url = candidates[this.urlIndex % candidates.length];
     // Одно зеркало (не SomaFM) — на ретраях добавляем cache-bust.
     if (candidates.length === 1 && this.attempt > 0) url = this.cacheBust(url);
+    // CORS-режим применяется до src: ресурс должен быть запрошен именно так.
+    audio.crossOrigin = this.corsMode ? "anonymous" : null;
     audio.src = url;
     audio.volume = this.volume;
     audio.muted = this.muted;

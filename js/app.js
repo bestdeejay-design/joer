@@ -14,7 +14,7 @@ import { createPlayerView } from "./ui/player-view.js";
 import { ThemeManager, themeById } from "./themes.js";
 import { createThemePicker } from "./ui/theme-picker.js";
 import { Atmosphere } from "./atmosphere.js";
-import { createReactivity, stationSupportsReactivity } from "./audio-reactivity.js";
+import { createReactivity, probeStreamCors, knownCorsSupport } from "./audio-reactivity.js";
 
 const els = {
   groups: document.getElementById("groups"),
@@ -49,6 +49,18 @@ const state = {
 
 const themes = new ThemeManager();
 
+/** Атмосферный движок: сцена от темы, живость от станции и состояния плеера. */
+const atmosphere = new Atmosphere(document.getElementById("atmosphere"), {
+  quality: prefs.quality,
+  calm: prefs.calm,
+});
+atmosphere.setScene(themeById(themes.theme).scene);
+atmosphere.setIntensity(state.intensity);
+atmosphere.start();
+
+themes.addEventListener("change", (event) => atmosphere.setScene(event.detail.scene));
+document.addEventListener("joer:intensitychange", (event) => atmosphere.setIntensity(event.detail.value));
+
 createThemePicker({
   root: document.getElementById("theme-picker"),
   manager: themes,
@@ -58,16 +70,17 @@ createThemePicker({
     if (commit) prefs.intensity = value;
     document.dispatchEvent(new CustomEvent("joer:intensitychange", { detail: { value } }));
   },
+  initialQuality: prefs.quality,
+  onQuality: (value) => {
+    prefs.quality = value;
+    atmosphere.setQuality(value);
+  },
+  initialCalm: prefs.calm,
+  onCalm: (value) => {
+    prefs.calm = value;
+    atmosphere.setCalm(value);
+  },
 });
-
-/** Атмосферный движок: сцена от темы, живость от станции и состояния плеера. */
-const atmosphere = new Atmosphere(document.getElementById("atmosphere"));
-atmosphere.setScene(themeById(themes.theme).scene);
-atmosphere.setIntensity(state.intensity);
-atmosphere.start();
-
-themes.addEventListener("change", (event) => atmosphere.setScene(event.detail.scene));
-document.addEventListener("joer:intensitychange", (event) => atmosphere.setIntensity(event.detail.value));
 
 /* ------------------------------------------------------------------
    Плеер
@@ -113,29 +126,79 @@ player.bindMediaSession({
 });
 
 /**
- * Аудио-реактивность — только для станций с явным флагом `cors: true`.
+ * Аудио-реактивность — только когда поддержка CORS потока подтверждена:
+ * флаг `cors: true` в каталоге (после `npm run audit:cors`) либо проба
+ * `probeStreamCors()` (результат кэшируется). Явный `cors: false` — никогда.
+ *
  * Любая неудача → пересоздаём <audio> без Web Audio-графа: звук важнее эффектов.
  */
 let reactivity = null;
+let attachToken = 0;
 
-function attachReactivity(station) {
-  reactivity?.dispose();
+function disposeReactivity() {
+  if (!reactivity) return;
+  const wired = reactivity.element;
+  reactivity.dispose();
   reactivity = null;
+  // Элемент, живший в графе закрытого AudioContext, навсегда немеет — только свежий.
+  if (wired && player.audio === wired) player.freshAudio();
+}
 
-  if (!stationSupportsReactivity(station)) {
-    atmosphere.setLevels(null);
-    return;
-  }
-
-  reactivity = createReactivity(player.ensureAudio(), {
+/** Строит граф на свежем <audio> (crossOrigin ставится до src). false — не вышло. */
+function startGraph(token) {
+  if (token !== attachToken) return false;
+  const audio = player.freshAudio();
+  const controller = createReactivity(audio, {
     onLevels: (levels) => atmosphere.setLevels(levels),
     onFallback: (error) => {
       console.info("[joer] реактивность отключена, сцена снова процедурная:", error?.message ?? error);
+      const wasWired = Boolean(reactivity);
       reactivity = null;
       atmosphere.setLevels(null);
-      player.recreateAudio();
+      player.setCorsMode(false);
+      // Граф жил и умер (молчащий анализатор) — нужен чистый <audio> и перезапуск.
+      if (wasWired) player.recreateAudio();
     },
   });
+  if (!controller) return false;
+  reactivity = controller;
+  return true;
+}
+
+async function attachReactivity(station) {
+  const token = ++attachToken;
+  disposeReactivity();
+  atmosphere.setLevels(null);
+
+  if (!station) return;
+
+  // true — подключаться сразу; false — никогда; null — неизвестно, нужна проба.
+  const known =
+    station.cors === true ? true : station.cors === false ? false : knownCorsSupport(station.url);
+
+  if (known === false) {
+    player.setCorsMode(false);
+    return;
+  }
+
+  if (known === true) {
+    // Поддержка известна: <audio> уходит в CORS-режим до старта потока — без разрыва.
+    player.setCorsMode(true);
+    if (!startGraph(token)) player.setCorsMode(false);
+    return;
+  }
+
+  // Неизвестно: музыка играет без графа, проба идёт фоном и ничего не ломает.
+  player.setCorsMode(false);
+  const supported = await probeStreamCors(station.url);
+  if (token !== attachToken || !supported) return;
+
+  const wasActive = player.state === STATE.PLAYING || player.state === STATE.LOADING;
+  player.setCorsMode(true);
+  const attached = startGraph(token);
+  if (!attached) player.setCorsMode(false);
+  // Элемент уже пересоздан (в графе или под замену) — возвращаем поток.
+  if (wasActive) player.resume();
 }
 
 player.addEventListener("change", (event) => {

@@ -20,6 +20,8 @@ export const KEYS = Object.freeze({
   muted: `${PREFIX}muted`,
   theme: `${PREFIX}theme`,
   intensity: `${PREFIX}intensity`,
+  quality: `${PREFIX}quality`,
+  calm: `${PREFIX}calm`,
   group: `${PREFIX}group`,
 });
 
@@ -182,6 +184,22 @@ export const prefs = {
   },
   set intensity(value) {
     if (number01(value)) write(KEYS.intensity, value);
+  },
+
+  /** Качество сцены: "low" | "med" | "high". */
+  get quality() {
+    return readScalar(KEYS.quality, "med", (v) => v === "low" || v === "med" || v === "high");
+  },
+  set quality(value) {
+    if (value === "low" || value === "med" || value === "high") write(KEYS.quality, value);
+  },
+
+  /** «Спокойный режим» атмосферы: мягко, без вспышек. */
+  get calm() {
+    return readScalar(KEYS.calm, false, (v) => typeof v === "boolean");
+  },
+  set calm(value) {
+    write(KEYS.calm, Boolean(value));
   },
 
   get group() {

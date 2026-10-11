@@ -36,6 +36,7 @@ for (const st of data.stations) {
   if (!st.description || !st.homepage) p.push("пустые description/homepage");
   if (!Array.isArray(st.genres) || st.genres.length === 0) p.push("нет genres");
   if (!(st.energy >= 1 && st.energy <= 5)) p.push(`energy вне диапазона 1..5: ${st.energy}`);
+  if ("cors" in st && typeof st.cors !== "boolean") p.push(`cors должен быть boolean: ${st.cors}`);
   if (p.length) structProblems.push(`${st.id}: ${p.join("; ")}`);
   perGroup.set(st.groupId, (perGroup.get(st.groupId) ?? 0) + 1);
 }

@@ -7,6 +7,7 @@
   "scripts": {
     "serve": "node scripts/serve.mjs",
     "validate": "node scripts/validate-stations.mjs",
+    "audit:cors": "node scripts/audit-cors.mjs",
     "icons": "node scripts/make-icons.mjs",
     "test": "node scripts/smoke-test.mjs"
   },
