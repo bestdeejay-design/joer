@@ -11,6 +11,9 @@
  *  - параллакс от курсора/скролла (~14 px), «протирка» светом при смене сцены;
  *  - режимы качества (low/med/high) и «спокойный режим» (calm).
  *
+ * T-10: стилизованный эквалайзер у левого края (js/equalizer.js) — рисуется
+ * в том же кадре и том же offscreen-буфере, что и сцена, кроссфейдится вместе с ней.
+ *
  * Гарантии (docs/ARCHITECTURE.md):
  *  - базовая анимация процедурная и не зависит от Web Audio;
  *  - вкладка скрыта → rAF остановлен (CPU ~0);
@@ -20,6 +23,7 @@
  */
 
 import { Rhythm } from "./rhythm.js";
+import { EqualizerBands, createEqualizerState, drawEqualizer, equalizerLayout } from "./equalizer.js";
 
 const DPR_LIMIT = 2;
 const CROSSFADE_MS = 800;
@@ -678,6 +682,9 @@ export class Atmosphere {
     this.pointer = { x: 0, y: 0 };
     this.scrollBias = 0;
     this.bufferDiv = null;
+    this.eqBands = new EqualizerBands();
+    this.eqLayout = equalizerLayout(1024, 768);
+    this.lastEqualizer = [];
 
     this.applyVisual();
     if (this.disabled) return;
@@ -828,6 +835,7 @@ export class Atmosphere {
   prepareScene(id) {
     const scene = { id, ...scenes[id] };
     scene.init?.(scene);
+    scene.eq = createEqualizerState(id);
     return scene;
   }
 
@@ -866,6 +874,7 @@ export class Atmosphere {
     this.width = width;
     this.height = height;
     this.dpr = dpr;
+    this.eqLayout = equalizerLayout(width, height);
     this.sceneCanvas = null; // переcоздадим под новый размер
     if (this.reduceMotionValue) this.renderStatic();
   }
@@ -936,6 +945,10 @@ export class Atmosphere {
     target.clearRect(0, 0, w, h);
     this.paintScene(target, outgoing, 1 - fadeK);
     this.paintScene(target, this.active, outgoing ? fadeK : 1);
+    // Эквалайзер — поверх обеих сцен, но в том же буфере: bloom и кроссфейд общие
+    this.lastEqualizer = [];
+    this.paintEqualizer(target, outgoing, 1 - fadeK);
+    this.paintEqualizer(target, this.active, outgoing ? fadeK : 1);
     if (outgoing && fadeK < 1) this.drawWipe(target, fadeK);
 
     if (!useBloom) return;
@@ -957,6 +970,9 @@ export class Atmosphere {
     const ctx = this.ctx;
     ctx.globalCompositeOperation = "source-over";
     ctx.globalAlpha = 1;
+    // Основной канвас чистим каждый кадр: иначе полупрозрачные кадры и аддитивный
+    // bloom копятся друг на друге и за секунды выжигают картинку в «засвет».
+    ctx.clearRect(0, 0, w, h);
     ctx.drawImage(this.sceneCanvas, 0, 0, w, h);
     ctx.globalCompositeOperation = "lighter";
     ctx.globalAlpha = cfg.strength * (this.calm ? 0.55 : 1);
@@ -972,6 +988,35 @@ export class Atmosphere {
     target.translate(this.parallax.x * PARALLAX_PX * scale, this.parallax.y * PARALLAX_PX * scale);
     scene.draw?.call(scene, target, { ...this.buildParams(alpha), sprites: this.sprites[scene.id] ?? [] });
     target.restore();
+  }
+
+  /** Сглаживание полос эквалайзера: общий спектр + «дыхание» на паузе. */
+  updateEqualizer(dt, { snap = false } = {}) {
+    this.eqBands.update(dt, {
+      spectrum: this.rhythm.spectrum,
+      state: this.playerState,
+      calm: this.calm,
+      snap,
+    });
+  }
+
+  /** Эквалайзер стиля сцены у левого края (T-10). Без параллакса — якорь композиции. */
+  paintEqualizer(target, scene, alpha) {
+    if (!scene || alpha <= 0.002) return null;
+    const params = this.buildParams(alpha);
+    const stats = drawEqualizer(target, scene.id, scene.eq ?? (scene.eq = createEqualizerState(scene.id)), {
+      ...params,
+      clock: this.clock,
+      layout: this.eqLayout,
+      bands: this.eqBands.values,
+      live: this.eqBands.live,
+      low: this.quality === "low",
+      calm: this.calm,
+      snap: this.eqSnap === true,
+      sprites: this.sprites[scene.id] ?? [],
+    });
+    if (stats) this.lastEqualizer.push(stats);
+    return stats;
   }
 
   buildParams(alpha) {
@@ -1055,6 +1100,7 @@ export class Atmosphere {
       intensity: this.intensity,
       motion: this.motion,
     });
+    this.updateEqualizer(dt);
 
     if (this.fade < 1) this.fade = Math.min(1, this.fade + (dt * 1000) / CROSSFADE_MS);
 
@@ -1073,7 +1119,11 @@ export class Atmosphere {
       intensity: this.intensity,
       motion: this.motion,
     });
+    // Статичный кадр: полосы сразу в целевом положении, без инерции
+    this.updateEqualizer(0.016, { snap: true });
+    this.eqSnap = true;
     this.draw(null);
+    this.eqSnap = false;
   }
 
   draw(outgoing) {

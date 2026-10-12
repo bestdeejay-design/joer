@@ -960,6 +960,192 @@ section("12. Ритм, пробы CORS и качество");
 }
 
 /* =====================================================================
+   13. Стилизованный эквалайзер атмосферы (T-10)
+   ===================================================================== */
+section("13. Эквалайзер атмосферы (T-10)");
+
+{
+  const env = await makeEnv(html, { canvas: "stub" });
+  globalThis.Audio = FakeAudio;
+  const app = await importFresh("js/app.js");
+  await tick(60);
+  const atmo = app.atmosphere;
+  app.atmosphere.stop(); // шаги кадров — вручную, без гонки с rAF
+  const eq = await importFresh("js/equalizer.js");
+  const { atmosphereScenes } = await importFresh("js/atmosphere.js");
+  const { Rhythm } = await importFresh("js/rhythm.js");
+  const sceneIds = Object.keys(atmosphereScenes);
+  const mean = (arr) => Array.from(arr).reduce((a, b) => a + b, 0) / arr.length;
+  const fill = (v) => new Array(32).fill(v);
+
+  check("у каждой из 5 сцен свой стиль эквалайзера", sceneIds.length === 5 && sceneIds.every((id) => eq.EQUALIZER_STYLES.includes(id)), eq.EQUALIZER_STYLES.join(","));
+
+  // Стиль следует за сценой; рисуется в общем кадре атмосферы
+  for (const id of sceneIds) {
+    atmo.setScene(id);
+    atmo.fade = 1;
+    atmo.outgoing = null;
+    atmo.draw(null);
+    const last = atmo.lastEqualizer.at(-1);
+    check(`тема-сцена ${id}: эквалайзер рисуется своим стилем`, last?.style === id && atmo.lastEqualizer.length === 1, JSON.stringify(atmo.lastEqualizer.map((s) => s.style)));
+  }
+
+  // Кроссфейд: при смене сцены оба стиля в кадре, вес нового растёт
+  atmo.setScene("vinyl");
+  atmo.fade = 1;
+  atmo.setScene("rings");
+  atmo.fade = 0.5;
+  atmo.draw(atmo.outgoing);
+  const styles = atmo.lastEqualizer.map((s) => s.style);
+  check("смена темы → кроссфейд эквалайзеров (оба стиля в кадре)", styles.includes("vinyl") && styles.includes("rings"), styles.join(","));
+  const [outEq, inEq] = atmo.lastEqualizer;
+  check("веса кроссфейда дополняют друг друга", inEq.alpha > 0 && outEq.alpha > 0 && Math.abs((outEq.alpha + inEq.alpha) - atmo.eqLayout.fade) < 0.01, `${outEq.alpha.toFixed(2)} + ${inEq.alpha.toFixed(2)}`);
+  atmo.fade = 1;
+  atmo.outgoing = null;
+
+  // Рисунки действительно разные (не один бар-чарт с другим цветом)
+  const frameFor = (overrides = {}) => ({
+    t: 3, dt: 1 / 60, clock: 3, alpha: 1,
+    layout: eq.equalizerLayout(1440, 900),
+    bands: Float32Array.from(fill(0.6)), live: 1,
+    bass: 0.5, mid: 0.5, high: 0.3, kick: 0, pulse: 0.4, beatCount: 1,
+    palette: atmo.palette, low: false, calm: false, snap: false,
+    ...overrides,
+  });
+  const signature = (id, overrides) => {
+    const ctx = makeStubContext();
+    eq.drawEqualizer(ctx, id, eq.createEqualizerState(id), frameFor({ sprites: atmo.sprites[id] ?? [], ...overrides }));
+    const counts = {};
+    for (const call of ctx.calls) counts[call] = (counts[call] ?? 0) + 1;
+    return { counts, key: JSON.stringify(Object.entries(counts).sort()) };
+  };
+  const sigs = sceneIds.map((id) => signature(id).key);
+  check("5 стилей дают 5 разных рисунков (разный набор примитивов)", new Set(sigs).size === 5);
+
+  // Реакция на спектр (тот же поток, что у сцен: setLevels → rhythm.spectrum → полосы)
+  const stepFrames = (n, reactive = true) => {
+    for (let i = 0; i < n; i += 1) {
+      atmo.rhythm.update(1 / 60, { reactive, bass: atmo.levels.bass, mid: atmo.levels.mid, high: atmo.levels.high, motion: 1 });
+      atmo.updateEqualizer(1 / 60);
+    }
+  };
+  atmo.setPlayerState("playing");
+  atmo.setLevels({ bass: 0.9, mid: 0.8, high: 0.7, overall: 0.8, spectrum: fill(0.95) });
+  stepFrames(120);
+  const loud = atmo.eqBands.mean;
+  atmo.setLevels({ bass: 0.05, mid: 0.05, high: 0.05, overall: 0.05, spectrum: fill(0.02) });
+  stepFrames(180);
+  const quiet = atmo.eqBands.mean;
+  check("реальный спектр: громко → полосы высокие, тихо → низкие", loud > 0.75 && quiet < 0.3, `${loud.toFixed(2)} vs ${quiet.toFixed(2)}`);
+  const spectrumShape = fill(0.05).map((v, i) => (i < 8 ? 0.95 : v));
+  atmo.setLevels({ bass: 0.9, mid: 0.1, high: 0.05, overall: 0.4, spectrum: spectrumShape });
+  stepFrames(120);
+  check("форма спектра доходит до полос (бас громче верхов)", atmo.eqBands.values[2] > atmo.eqBands.values[28] + 0.4, `${atmo.eqBands.values[2].toFixed(2)} / ${atmo.eqBands.values[28].toFixed(2)}`);
+
+  // Без CORS — живой синтетический ритм (не залипший столбик)
+  atmo.setLevels(null);
+  const synthMeans = [];
+  for (let i = 0; i < 240; i += 1) {
+    stepFrames(1, false);
+    synthMeans.push(atmo.eqBands.mean);
+  }
+  const synthRange = Math.max(...synthMeans) - Math.min(...synthMeans);
+  check("без CORS полосы живут на синтез-спектре", synthRange > 0.02 && Math.max(...synthMeans) < 0.85, `диапазон ${synthRange.toFixed(3)}, макс ${Math.max(...synthMeans).toFixed(2)}`);
+
+  // Пауза: плавное оседание в «дыхание», а не мёртвый столбик
+  const bands = new eq.EqualizerBands();
+  for (let i = 0; i < 120; i += 1) bands.update(1 / 60, { spectrum: fill(0.9), state: "playing" });
+  const playingMean = bands.mean;
+  bands.update(1 / 60, { spectrum: fill(0.9), state: "paused" });
+  const justPaused = bands.mean;
+  check("пауза не обрывает полосы мгновенно", justPaused > playingMean * 0.9, `${playingMean.toFixed(2)} → ${justPaused.toFixed(2)}`);
+  for (let i = 0; i < 240; i += 1) bands.update(1 / 60, { spectrum: fill(0.9), state: "paused" });
+  const settled = bands.mean;
+  const snapshot = Float32Array.from(bands.values);
+  for (let i = 0; i < 60; i += 1) bands.update(1 / 60, { spectrum: fill(0.9), state: "paused" });
+  const drift = Array.from(bands.values).reduce((acc, v, i) => acc + Math.abs(v - snapshot[i]), 0);
+  check("на паузе полосы оседают в спокойный уровень", settled > 0.03 && settled < 0.25, settled.toFixed(3));
+  check("на паузе полосы продолжают «дышать»", drift > 0.05, `Σ|Δ|=${drift.toFixed(3)}`);
+
+  // Спокойный режим: амплитуда ×0.5 и без вспышек
+  const normal = new eq.EqualizerBands();
+  const calm = new eq.EqualizerBands();
+  for (let i = 0; i < 120; i += 1) {
+    normal.update(1 / 60, { spectrum: fill(0.9), state: "playing" });
+    calm.update(1 / 60, { spectrum: fill(0.9), state: "playing", calm: true });
+  }
+  const rest = new eq.EqualizerBands();
+  for (let i = 0; i < 120; i += 1) rest.update(1 / 60, { spectrum: fill(0.9), state: "paused" });
+  const ratio = (calm.mean - rest.mean) / (normal.mean - rest.mean);
+  check("спокойный режим: амплитуда ≈ ×0.5", ratio > 0.4 && ratio < 0.6, ratio.toFixed(2));
+  const flashCalm = sceneIds.map((id) => eq.drawEqualizer(makeStubContext(), id, eq.createEqualizerState(id), frameFor({ kick: 1, high: 1, beatCount: 7, calm: true, sprites: atmo.sprites[id] ?? [] })).flashes);
+  const flashNormal = ["rings", "bokeh", "stars"].map((id) => {
+    const state = eq.createEqualizerState(id);
+    if (state.cooldown !== undefined) state.cooldown = 0;
+    return eq.drawEqualizer(makeStubContext(), id, state, frameFor({ kick: 1, high: 1, beatCount: 7, sprites: atmo.sprites[id] ?? [] })).flashes;
+  });
+  check("обычный режим: кик/«сердце»/метеор вспыхивают", flashNormal.every((f) => f > 0), flashNormal.join(","));
+  check("спокойный режим: без вспышек", flashCalm.every((f) => f === 0), flashCalm.join(","));
+
+  // low: упрощённый рисунок — без спрайтов-свечений и bloom-ореолов
+  const lowImages = sceneIds.map((id) => signature(id, { low: true }).counts.drawImage ?? 0);
+  const medImages = ["waves", "bokeh", "stars"].map((id) => signature(id).counts.drawImage ?? 0);
+  check("quality low: эквалайзер без свечений (0 drawImage)", lowImages.every((n) => n === 0), lowImages.join(","));
+  check("quality med: свечения есть у waves/bokeh/stars", medImages.every((n) => n > 0), medImages.join(","));
+  const ringsLowFills = signature("rings", { low: true }).counts.fillRect;
+  const ringsMedFills = signature("rings").counts.fillRect;
+  check("quality low: у club нет вертикального bloom-ореола баров", ringsLowFills < ringsMedFills, `${ringsLowFills} < ${ringsMedFills}`);
+
+  // Раскладка: левый край, 60–80% высоты, на 320px — кромка в боковом поле
+  const wide = eq.equalizerLayout(1440, 900);
+  const freeLeft = (1440 - 1180) / 2 + 32;
+  check("1440px: полоса у левого края, в свободном поле", wide.x >= 12 && wide.x + wide.width <= freeLeft && !wide.compact, JSON.stringify(wide));
+  check("высота полосы 60–80% вьюпорта", wide.height / 900 >= 0.6 && wide.height / 900 <= 0.8, (wide.height / 900).toFixed(2));
+  check("полоса между хедером (64px) и плеером (88px)", wide.y >= 64 && wide.y + wide.height <= 900 - 88, `${wide.y}…${wide.y + wide.height}`);
+  const narrow = eq.equalizerLayout(320, 640);
+  check("320px: узкая кромка ≤ 40px", narrow.compact && narrow.width <= eq.EQ_COMPACT_MAX, JSON.stringify(narrow));
+  check("320px: кромка внутри бокового поля — карточки не перекрыты", narrow.x >= 0 && narrow.x + narrow.width <= 16 - 2, `${narrow.x}+${narrow.width} ≤ 14`);
+  check("< 720px — компактный режим", eq.equalizerLayout(719, 800).compact && !eq.equalizerLayout(720, 800).compact);
+  check("нет свободного поля → полоса приглушена (под карточками)", eq.equalizerLayout(1024, 768).fade < 1);
+
+  // Слой и производительность: внутри canvas атмосферы, без своего rAF/буферов/DOM
+  const eqSource = read("js/equalizer.js");
+  check("эквалайзер без своего rAF и без новых буферов/DOM", !/requestAnimationFrame|createElement|document\./.test(eqSource));
+  check("эквалайзер — внутри canvas .atmosphere (без отдельного DOM-элемента)", !/equalizer/i.test(html) && !/equalizer/i.test(layoutCss));
+
+  // Регресс T-09: синтез-спектр не залипает в 1, основной канвас чистится каждый кадр
+  const synth = new Rhythm();
+  const synthTrace = [];
+  for (let i = 0; i < 900; i += 1) {
+    synth.update(1 / 60, { energy: 3, intensity: 0.75, motion: 1 });
+    if (i > 300) synthTrace.push(mean(synth.spectrum));
+  }
+  check("синтез-спектр не залипает в максимум", Math.max(...synthTrace) < 0.7 && Math.max(...synthTrace) - Math.min(...synthTrace) > 0.05, `${Math.min(...synthTrace).toFixed(2)}…${Math.max(...synthTrace).toFixed(2)}`);
+  const mainStub = makeStubContext();
+  atmo.ctx = mainStub;
+  atmo.setQuality("med");
+  atmo.draw(null);
+  const clearAt = mainStub.calls.indexOf("clearRect");
+  const imageAt = mainStub.calls.indexOf("drawImage");
+  check("med: основной канвас чистится перед кадром (нет накопления «засвета»)", clearAt !== -1 && clearAt < imageAt, mainStub.calls.slice(0, 4).join(","));
+
+  env.window.close();
+}
+
+{
+  const env = await makeEnv(html, { canvas: "stub", reduceMotion: true });
+  globalThis.Audio = FakeAudio;
+  const app = await importFresh("js/app.js");
+  await tick(60);
+  const atmo = app.atmosphere;
+  check("reduced-motion: эквалайзер есть в статичном кадре", atmo.raf === null && atmo.lastEqualizer.length === 1, JSON.stringify(atmo.lastEqualizer.map((s) => s.style)));
+  const before = Float32Array.from(atmo.eqBands.values);
+  await tick(200);
+  check("reduced-motion: полосы статичны", Array.from(atmo.eqBands.values).every((v, i) => v === before[i]));
+  env.window.close();
+}
+
+/* =====================================================================
    Итог
    ===================================================================== */
 console.log(`\nИтого: ${passed} ок, ${failed} провалено.`);
