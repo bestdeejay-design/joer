@@ -677,6 +677,7 @@ export class Atmosphere {
     this.parallax = { x: 0, y: 0 };
     this.pointer = { x: 0, y: 0 };
     this.scrollBias = 0;
+    this.bufferDiv = null;
 
     this.applyVisual();
     if (this.disabled) return;
@@ -765,7 +766,7 @@ export class Atmosphere {
     if (this.reduceMotionValue) this.renderStatic();
   }
 
-  /** «Спокойный режим»: мягче движение, без ярких вспышек. */
+  /** «Спокойный режим»: уменьшает и движение, и амплитуду ритмических пиков. */
   setCalm(value) {
     this.calm = Boolean(value);
     if (this.reduceMotionValue) this.renderStatic();
@@ -892,7 +893,13 @@ export class Atmosphere {
   ensureBuffers() {
     const w = this.canvas.width;
     const h = this.canvas.height;
-    if (this.sceneCanvas && this.sceneCanvas.width === w && this.sceneCanvas.height === h) return;
+    const cfg = BLOOM_BY_QUALITY[this.quality] ?? BLOOM_BY_QUALITY.med;
+    if (
+      this.sceneCanvas &&
+      this.sceneCanvas.width === w &&
+      this.sceneCanvas.height === h &&
+      this.bufferDiv === cfg.div
+    ) return;
 
     const make = (width, height) => {
       const canvas = document.createElement("canvas");
@@ -905,13 +912,13 @@ export class Atmosphere {
     this.sceneCtx = this.sceneCanvas.getContext("2d");
     if (this.sceneCtx) this.sceneCtx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
 
-    const cfg = BLOOM_BY_QUALITY[this.quality] ?? BLOOM_BY_QUALITY.med;
     const aw = Math.max(8, Math.round(w / cfg.div));
     const ah = Math.max(8, Math.round(h / cfg.div));
     this.bloomA = make(aw, ah);
     this.bloomACtx = this.bloomA.getContext("2d");
     this.bloomB = make(Math.max(8, aw >> 1), Math.max(8, ah >> 1));
     this.bloomBCtx = this.bloomB.getContext("2d");
+    this.bufferDiv = cfg.div;
   }
 
   bloomConfig() {
@@ -968,6 +975,12 @@ export class Atmosphere {
   }
 
   buildParams(alpha) {
+    const calm = this.calm;
+    const calmScale = (normal, softened) => (calm ? softened : normal);
+    const bass = this.reactive ? this.levels.bass : this.rhythm.kick;
+    const mid = this.reactive ? this.levels.mid : 0.28 + Math.sin(this.clock * 0.21) * 0.12;
+    const high = this.reactive ? this.levels.high : this.rhythm.sparkle;
+
     return {
       t: this.time,
       dt: this.frameDt,
@@ -975,15 +988,16 @@ export class Atmosphere {
       h: this.height,
       alpha,
       motion: this.motion,
-      pulse: this.rhythm.pulse,
-      kick: this.rhythm.kick * (this.calm ? 0.55 : 1),
-      snare: this.rhythm.snare,
-      hat: this.rhythm.hat,
-      sparkle: this.rhythm.sparkle,
-      // Роли полос: bass → пинок/масштаб, mid → дрейф, high → мерцание
-      bass: this.reactive ? this.levels.bass : this.rhythm.kick,
-      mid: this.reactive ? this.levels.mid : 0.28 + Math.sin(this.clock * 0.21) * 0.12,
-      high: this.reactive ? this.levels.high : this.rhythm.sparkle,
+      // Calm сглаживает именно музыкальные пики, а не только общий glow.
+      pulse: this.rhythm.pulse * calmScale(1, 0.72),
+      kick: this.rhythm.kick * calmScale(1, 0.2),
+      snare: this.rhythm.snare * calmScale(1, 0.55),
+      hat: this.rhythm.hat * calmScale(1, 0.45),
+      sparkle: this.rhythm.sparkle * calmScale(1, 0.35),
+      // Роли полос: bass → пинок/масштаб, mid → дрейф, high → мерцание.
+      bass: bass * calmScale(1, 0.65),
+      mid: mid * calmScale(1, 0.75),
+      high: high * calmScale(1, 0.45),
       speed: this.speed,
       bpm: this.rhythm.bpm,
       beatPhase: this.rhythm.beatPhase,

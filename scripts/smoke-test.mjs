@@ -191,6 +191,26 @@ check(
   /\[hidden\]\s*\{\s*display:\s*none\s*!important/.test(read("css/base.css")),
 );
 
+const layoutCss = read("css/layout.css");
+const layerZIndex = (selector) => {
+  const start = layoutCss.indexOf(`${selector} {`);
+  const end = layoutCss.indexOf("\n}", start);
+  const rule = layoutCss.slice(start, end);
+  const value = rule.split("z-index: ")[1]?.split(";")[0];
+  return value === "var(--z-canvas)" ? 1 : Number(value);
+};
+const stackingOrder = [".bg-gradient", ".atmosphere", ".bg-grain", ".bg-vignette"].map(layerZIndex);
+check(
+  "фоновые слои идут градиент → canvas → зерно → виньетка",
+  stackingOrder.every(Number.isFinite) && stackingOrder.every((value, index) => index === 0 || value > stackingOrder[index - 1]),
+  stackingOrder.join(" → "),
+);
+const cardCss = read("css/components/card.css");
+check(
+  "CSS подсветки карточки использует класс is-current из UI",
+  /\.card\.is-current\s*\{/.test(cardCss) && !/\.card\.is-active\s*\{/.test(cardCss),
+);
+
 /* =====================================================================
    2. Каталог: структура данных
    ===================================================================== */
@@ -469,6 +489,7 @@ section("6. Клик по карточке");
   check("плеер получил URL станции", created[0]?.src === expectedUrl, `src=${created[0]?.src}`);
   check("плеер в состоянии playing", app.player.state === "playing", `фактически ${app.player.state}`);
   check("карточка помечена как играющая", firstCard.classList.contains("is-playing"));
+  check("карточка получает класс текущей станции для визуальной подсветки", firstCard.classList.contains("is-current"));
   check("в плеере показано имя станции", env.document.getElementById("player-station").textContent === firstCard.querySelector(".card-name").textContent);
   check("последняя станция сохранена", env.window.localStorage.getItem("joer:lastStation") === JSON.stringify(firstCard.dataset.stationId));
 
@@ -889,8 +910,12 @@ section("12. Ритм, пробы CORS и качество");
   await tick(60);
   const atmo = app.atmosphere;
   check("качество по умолчанию — med", atmo.quality === "med", atmo.quality);
+  atmo.ensureBuffers();
+  const medBloomWidth = atmo.bloomA.width;
   atmo.setQuality("high");
+  atmo.ensureBuffers();
   check("setQuality переключает режим", atmo.quality === "high");
+  check("high пересобирает буфер для более детального bloom", atmo.bloomA.width > medBloomWidth, `${medBloomWidth} → ${atmo.bloomA.width}`);
   check("у high bloom глубже, чем у low", atmo.bloomConfig().strength > 0);
   atmo.setQuality("low");
   check("low — без bloom", atmo.bloomConfig().strength === 0);
@@ -898,6 +923,11 @@ section("12. Ритм, пробы CORS и качество");
 
   atmo.setCalm(true);
   check("спокойный режим включается", atmo.calm === true);
+  atmo.rhythm.kick = 1;
+  atmo.rhythm.pulse = 1;
+  atmo.rhythm.sparkle = 1;
+  const calmParams = atmo.buildParams(1);
+  check("спокойный режим реально смягчает пики и мерцание", calmParams.kick <= 0.2 && calmParams.pulse < 1 && calmParams.sparkle <= 0.35);
   atmo.setCalm(false);
   check("спокойный режим выключается", atmo.calm === false);
 

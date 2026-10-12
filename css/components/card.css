@@ -212,8 +212,8 @@
   filter: drop-shadow(0 0 10px color-mix(in oklab, var(--accent-2) 60%, transparent));
 }
 
-/* --- Активная (играющая) карточка --- */
-.card.is-active {
+/* --- Активная (текущая) карточка --- */
+.card.is-current {
   border-color: color-mix(in oklab, var(--accent) 60%, transparent);
   box-shadow:
     0 0 0 1px color-mix(in oklab, var(--accent) 40%, transparent),
@@ -221,17 +221,17 @@
     var(--shadow-3);
 }
 
-.card.is-active::before {
+.card.is-current::before {
   opacity: 1;
   transform: scaleX(1);
 }
 
-.card.is-active .card-name {
+.card.is-current .card-name {
   color: color-mix(in oklab, var(--text) 70%, var(--accent));
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .card.is-active {
+  .card.is-current.is-playing {
     animation: card-breathe 4.4s var(--ease-soft) infinite;
   }
 
