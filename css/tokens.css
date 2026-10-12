@@ -39,7 +39,7 @@
   --fs-lg: 18px;
   --fs-xl: 22px;
   --fs-2xl: 30px;
-  --fs-3xl: clamp(32px, 6.4vw, 56px);
+  --fs-3xl: clamp(26px, 4.6vw + 12px, 56px);
 
   --lh-tight: 1.12;
   --lh-normal: 1.5;

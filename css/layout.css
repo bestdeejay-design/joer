@@ -167,6 +167,19 @@
 /* --- Герой первого экрана --- */
 .hero {
   padding-block: clamp(var(--sp-10), 7vw, var(--sp-16)) clamp(var(--sp-8), 5vw, var(--sp-12));
+  transition: padding-block var(--dur-3) var(--ease-soft);
+}
+
+/* Свёрнутый герой — тонкая полоса у верха, дальше только атмосфера и каталог */
+.hero.is-collapsed {
+  padding-block: var(--sp-3) var(--sp-4);
+}
+
+.hero-top {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
 }
 
 .hero-eyebrow {
@@ -184,10 +197,72 @@
   text-transform: uppercase;
 }
 
+/* Кнопка «свернуть/развернуть» — держит герой под контролем */
+.hero-fold {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: var(--touch);
+  margin-left: auto;
+  padding: 0 var(--sp-3);
+  border: 1px solid color-mix(in oklab, var(--border) 80%, transparent);
+  border-radius: var(--r-pill);
+  background: color-mix(in oklab, var(--surface) 40%, transparent);
+  color: var(--text-faint);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  transition:
+    color var(--dur-2) var(--ease-soft),
+    border-color var(--dur-2) var(--ease-soft),
+    background-color var(--dur-2) var(--ease-soft);
+}
+
+.hero-fold:hover {
+  color: var(--text);
+  border-color: color-mix(in oklab, var(--accent) 40%, var(--border));
+  background: color-mix(in oklab, var(--surface-2) 70%, transparent);
+}
+
+.hero-fold-icon {
+  width: 16px;
+  height: 16px;
+  /* «Свернуть» — стрелка к верху (туда уходит герой), «Развернуть» — к низу */
+  transform: rotate(180deg);
+  transition: transform var(--dur-3) var(--ease-out);
+}
+
+.hero.is-collapsed .hero-fold-icon {
+  transform: none;
+}
+
+/* Тело героя сворачивается к верху: grid 1fr→0fr — плавно и без измерений в JS */
+.hero-body {
+  display: grid;
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transition:
+    grid-template-rows var(--dur-3) var(--ease-soft),
+    opacity var(--dur-2) var(--ease-soft);
+}
+
+.hero-body-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.hero.is-collapsed .hero-body {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .hero-title {
   margin-top: var(--sp-5);
   font-size: var(--fs-3xl);
-  max-width: 18ch;
+  max-width: 24ch;
+  text-wrap: balance;
 }
 
 .hero-title .accent {
@@ -212,9 +287,72 @@
   margin-top: var(--sp-6);
 }
 
+/* Низкие вьюпорты (пейзаж телефона/фолда): герой не съедает первый экран */
+@media (max-height: 620px) {
+  .hero {
+    padding-block: var(--sp-5) var(--sp-6);
+  }
+
+  .hero-title {
+    margin-top: var(--sp-3);
+    font-size: min(var(--fs-3xl), 34px);
+  }
+
+  .hero-lead {
+    margin-top: var(--sp-2);
+    font-size: var(--fs-md);
+    line-height: var(--lh-normal);
+  }
+
+  .hero-actions {
+    margin-top: var(--sp-4);
+  }
+}
+
+/* Узкие экраны: кнопки героя на всю ширину, компактный ярлык */
+@media (max-width: 480px) {
+  .hero-eyebrow {
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    padding: 5px var(--sp-2);
+  }
+
+  /* Иконка без подписи — кнопка сворачивания встаёт в один ряд с ярлыком */
+  .hero-fold {
+    gap: 0;
+    width: var(--touch);
+    padding: 0;
+    justify-content: center;
+    margin-left: auto;
+  }
+
+  .hero-fold-text {
+    display: none;
+  }
+
+  .hero-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .hero-actions .btn {
+    justify-content: center;
+  }
+
+  /* balance на 320px растягивает заголовок до 5 строк — pretty даёт естественный перенос */
+  .hero-title {
+    text-wrap: pretty;
+  }
+}
+
 /* --- Секции --- */
 .section {
   padding-block: var(--sp-8);
+}
+
+/* Якорь «Выбрать настроение» не прячется под sticky-хедер */
+#stations {
+  scroll-margin-top: calc(var(--header-h) + var(--sp-6));
 }
 
 .section-head {
@@ -242,7 +380,7 @@
   grid-template-columns: 1fr;
 }
 
-@media (min-width: 600px) {
+@media (min-width: 560px) {
   .station-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -284,7 +422,7 @@
   gap: var(--sp-6);
 }
 
-@media (min-width: 760px) {
+@media (min-width: 640px) {
   .about-grid {
     grid-template-columns: 1.4fr 1fr;
   }

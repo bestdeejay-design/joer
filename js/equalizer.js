@@ -18,8 +18,8 @@
 
 import { SPECTRUM_BANDS } from "./rhythm.js";
 
-/** Брейкпоинт, ниже которого эквалайзер ужимается в узкую кромку. */
-export const EQ_COMPACT_BREAKPOINT = 720;
+/** Брейкпоинт, ниже которого эквалайзер ужимается в узкую кромку (телефоны, обложка фолда). */
+export const EQ_COMPACT_BREAKPOINT = 560;
 /** Максимальная ширина кромки на узких экранах (критерий T-10). */
 export const EQ_COMPACT_MAX = 40;
 
@@ -87,10 +87,12 @@ export function sampleBands(bands, rows, index) {
 
 /**
  * Прямоугольник эквалайзера для вьюпорта w×h (CSS-пиксели).
- *  - ≥ 720px: полоса 60–80% высоты между хедером и плеером, в свободном поле
- *    слева от контента; если поля нет — приглушается (рисуется под карточками).
- *  - < 720px: узкая кромка ≤ 40px, целиком внутри боковых полей `.shell`
- *    (padding-inline: clamp(16px, 4vw, 32px)) — карточки не перекрываются.
+ *  - ≥ 560px: широкая полоса у левого края, высотой 60–80% между хедером и плеером.
+ *    Полоса свободно заходит под текст и карточки (canvas и так под контентом) —
+ *    «полка» слева от текста больше не ограничивает ширину; под текстом она
+ *    приглушается через fade, чтобы не спорить с читаемостью.
+ *  - < 560px: узкая кромка ≤ 40px у самого края — слегка заходит под контент,
+ *    но оставляет карточкам почти всё боковое поле.
  */
 export function equalizerLayout(w, h) {
   const width = Math.max(1, w);
@@ -108,18 +110,20 @@ export function equalizerLayout(w, h) {
   const y = available >= stripH ? top + (available - stripH) / 2 : (height - stripH) / 2;
 
   if (compact) {
-    // Кромка живёт в боковом поле: отступ 3px от края и ≥ 3px до контента
-    const x = 3;
-    const stripW = clamp(Math.floor(gutter - x * 2), 6, EQ_COMPACT_MAX);
+    // Кромка у самого края: до 9% ширины, но не больше EQ_COMPACT_MAX;
+    // заходит под контент всего на несколько пикселей — карточкам не мешает
+    const x = 2;
+    const stripW = clamp(Math.round(width * 0.09), 16, EQ_COMPACT_MAX);
     return { x, y, width: stripW, height: stripH, compact: true, gutter, fade: 0.7 };
   }
 
-  const freeLeft = Math.max(0, (width - TOKENS.contentMax) / 2) + gutter;
+  // Широкая полоса у левого края — до 20% вьюпорта (320px max): текст и карточки
+  // лежат поверх неё (canvas z-index 1), а fade делает её фоном, а не конкурентом
   const x = TOKENS.sp4;
-  const stripW = clamp(freeLeft - x - TOKENS.sp3, 44, 132);
-  // Полоса заходит под карточки — делаем её тише, чтобы не спорить с текстом
+  const stripW = clamp(Math.round(width * 0.2), 96, 320);
+  const freeLeft = Math.max(0, (width - TOKENS.contentMax) / 2) + gutter;
   const fits = x + stripW <= freeLeft;
-  return { x, y, width: stripW, height: stripH, compact: false, gutter, fade: fits ? 1 : 0.55 };
+  return { x, y, width: stripW, height: stripH, compact: false, gutter, fade: fits ? 1 : 0.6 };
 }
 
 /* ------------------------------------------------------------------

@@ -15,6 +15,7 @@ import { ThemeManager, themeById } from "./themes.js";
 import { createThemePicker } from "./ui/theme-picker.js";
 import { Atmosphere } from "./atmosphere.js";
 import { createReactivity, probeStreamCors, knownCorsSupport } from "./audio-reactivity.js";
+import { createHeroFold } from "./ui/hero.js";
 
 const els = {
   groups: document.getElementById("groups"),
@@ -60,6 +61,12 @@ atmosphere.start();
 
 themes.addEventListener("change", (event) => atmosphere.setScene(event.detail.scene));
 document.addEventListener("joer:intensitychange", (event) => atmosphere.setIntensity(event.detail.value));
+
+/* ------------------------------------------------------------------
+   Герой: сворачивание к верху — «наслаждаться атмосферой»
+   ------------------------------------------------------------------ */
+
+const heroFold = createHeroFold();
 
 createThemePicker({
   root: document.getElementById("theme-picker"),
@@ -359,11 +366,17 @@ function setupResume(lastStation) {
   if (!lastStation) return;
   if (els.resume) els.resume.hidden = false;
   if (els.resumeText) els.resumeText.textContent = `Продолжить: ${lastStation.name}`;
+  // Кнопка живёт в герое: свёрнутый герой разворачиваем, чтобы «Продолжить» было видно
+  heroFold.expand();
 }
 
 els.resume?.addEventListener("click", () => {
   const station = state.catalog?.byId.get(prefs.lastStation);
-  if (station) player.play(station);
+  if (station) {
+    player.play(station);
+    // Музыка пошла — герой сворачивается к верху, остаётся атмосфера
+    heroFold.collapse();
+  }
 });
 
 player.addEventListener("change", (event) => {
@@ -467,4 +480,4 @@ els.retry?.addEventListener("click", () => {
 syncVolumeUI();
 bootstrap();
 
-export { player, state, themes, atmosphere, renderCatalog, clearSearch };
+export { player, state, themes, atmosphere, heroFold, renderCatalog, clearSearch };

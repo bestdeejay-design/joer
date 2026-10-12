@@ -97,7 +97,8 @@
 
 /* --- Метаданные станции --- */
 .player-meta {
-  flex: 1 1 auto;
+  /* flex-basis 0: длинный nowrap-текст не «выталкивает» кнопки на второй ряд */
+  flex: 1 1 0;
   min-width: 0;
   display: grid;
   gap: 2px;
