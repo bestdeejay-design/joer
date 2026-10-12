@@ -16,3 +16,8 @@ npm-debug.log*
 
 # Scratch
 .scratch/
+
+# Local working notes & agent artifacts (not part of the repo)
+dajet-player.txt
+.omo/
+music/
