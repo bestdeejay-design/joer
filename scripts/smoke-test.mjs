@@ -1096,17 +1096,19 @@ section("13. Эквалайзер атмосферы (T-10)");
   const ringsMedFills = signature("rings").counts.fillRect;
   check("quality low: у club нет вертикального bloom-ореола баров", ringsLowFills < ringsMedFills, `${ringsLowFills} < ${ringsMedFills}`);
 
-  // Раскладка: левый край, 60–80% высоты, на 320px — кромка в боковом поле
+  // Раскладка: широкая полоса у левого края, заходит под текст; 60–80% высоты;
+  // на узких экранах — кромка у самого края
   const wide = eq.equalizerLayout(1440, 900);
-  const freeLeft = (1440 - 1180) / 2 + 32;
-  check("1440px: полоса у левого края, в свободном поле", wide.x >= 12 && wide.x + wide.width <= freeLeft && !wide.compact, JSON.stringify(wide));
+  check("1440px: полоса у левого края и свободно заходит под текст", wide.x >= 12 && wide.width >= 200 && wide.x + wide.width > (1440 - 1180) / 2 + 32 && !wide.compact, JSON.stringify(wide));
   check("высота полосы 60–80% вьюпорта", wide.height / 900 >= 0.6 && wide.height / 900 <= 0.8, (wide.height / 900).toFixed(2));
   check("полоса между хедером (64px) и плеером (88px)", wide.y >= 64 && wide.y + wide.height <= 900 - 88, `${wide.y}…${wide.y + wide.height}`);
+  const laptop = eq.equalizerLayout(1280, 800);
+  check("1280px: полоса уже перекрывает колонку текста (не узкая полка)", laptop.x + laptop.width > (1280 - 1180) / 2 + 32, JSON.stringify(laptop));
   const narrow = eq.equalizerLayout(320, 640);
   check("320px: узкая кромка ≤ 40px", narrow.compact && narrow.width <= eq.EQ_COMPACT_MAX, JSON.stringify(narrow));
-  check("320px: кромка внутри бокового поля — карточки не перекрыты", narrow.x >= 0 && narrow.x + narrow.width <= 16 - 2, `${narrow.x}+${narrow.width} ≤ 14`);
-  check("< 720px — компактный режим", eq.equalizerLayout(719, 800).compact && !eq.equalizerLayout(720, 800).compact);
-  check("нет свободного поля → полоса приглушена (под карточками)", eq.equalizerLayout(1024, 768).fade < 1);
+  check("320px: кромка почти целиком в боковом поле", narrow.x >= 0 && narrow.x + narrow.width <= 36, `${narrow.x}+${narrow.width}`);
+  check("< 560px — компактный режим (обложка фолда), ≥ 560px — полный (раскрытый фолд)", eq.equalizerLayout(559, 800).compact && !eq.equalizerLayout(560, 800).compact);
+  check("под текстом полоса приглушена (fade < 1)", eq.equalizerLayout(1024, 768).fade < 1 && eq.equalizerLayout(1440, 900).fade < 1);
 
   // Слой и производительность: внутри canvas атмосферы, без своего rAF/буферов/DOM
   const eqSource = read("js/equalizer.js");
@@ -1142,6 +1144,80 @@ section("13. Эквалайзер атмосферы (T-10)");
   const before = Float32Array.from(atmo.eqBands.values);
   await tick(200);
   check("reduced-motion: полосы статичны", Array.from(atmo.eqBands.values).every((v, i) => v === before[i]));
+  env.window.close();
+}
+
+/* =====================================================================
+   14. Герой: сворачивание к верху и адаптив (T-11)
+   ===================================================================== */
+section("14. Герой и адаптив (T-11)");
+
+{
+  // Статика: кнопка сворачивания, стили, адаптивные брейкпоинты
+  check("герой сворачивается кнопкой (hero-fold и hero-body в разметке)", /id="hero-fold"/.test(html) && /id="hero-body"/.test(html));
+  check("у кнопки героя aria-expanded и aria-controls", /aria-expanded="true"[\s\S]{0,200}aria-controls="hero-body"/.test(html));
+  check("в спрайте есть i-chevron для кнопки героя", /id="i-chevron"/.test(html));
+  check("тело героя сворачивается к верху (grid 1fr→0fr, .hero.is-collapsed)", /grid-template-rows:\s*0fr/.test(layoutCss) && /\.hero\.is-collapsed/.test(layoutCss));
+  check("низкие вьюпорты (пейзаж телефона/фолда) получают компактный герой", /@media \(max-height: 620px\)/.test(layoutCss));
+  check("сетка станций: 2 колонки с 560px (раскрытый фолд)", /@media \(min-width: 560px\)/.test(layoutCss));
+  check("кнопки героя на всю ширину на узких экранах", /@media \(max-width: 480px\)/.test(layoutCss));
+  check("заголовок героя плавно масштабируется 26→56px и балансирует строки", /--fs-3xl:\s*clamp\(26px/.test(read("css/tokens.css")) && /text-wrap:\s*balance/.test(layoutCss));
+  check("плеер: мета (flex 1 1 0) не выталкивает кнопки на второй ряд", /flex:\s*1 1 0/.test(read("css/components/player.css")));
+}
+
+{
+  // Поведение: свернуть/развернуть, aria, inert, персист
+  const env = await makeEnv(html, { canvas: "stub" });
+  globalThis.Audio = FakeAudio;
+  const app = await importFresh("js/app.js");
+  await tick(40);
+  const doc = env.document;
+  const hero = doc.getElementById("hero");
+  const fold = doc.getElementById("hero-fold");
+  const body = doc.getElementById("hero-body");
+
+  check("герой стартует развёрнутым", !hero.classList.contains("is-collapsed") && fold.getAttribute("aria-expanded") === "true");
+  fold.click();
+  await tick(10);
+  check("клик сворачивает герой к верху", hero.classList.contains("is-collapsed") && app.heroFold.collapsed === true);
+  check("aria-expanded и подпись кнопки обновились", fold.getAttribute("aria-expanded") === "false" && doc.getElementById("hero-fold-text").textContent === "Развернуть", doc.getElementById("hero-fold-text").textContent);
+  check("тело свёрнутого героя стало inert", body.hasAttribute("inert"));
+  check("состояние сворачивания сохраняется", env.window.localStorage.getItem("joer:heroCollapsed") === "true");
+  fold.click();
+  await tick(10);
+  check("повторный клик разворачивает герой", !hero.classList.contains("is-collapsed") && !body.hasAttribute("inert"));
+  env.window.close();
+}
+
+{
+  // Возврат: «Продолжить» разворачивает свёрнутый герой; клик — сворачивает снова
+  const env = await makeEnv(html, { canvas: "stub" });
+  globalThis.Audio = FakeAudio;
+  env.window.localStorage.setItem("joer:heroCollapsed", "true");
+  const lastId = env.catalog.stations[3].id;
+  env.window.localStorage.setItem("joer:lastStation", JSON.stringify(lastId));
+  const app = await importFresh("js/app.js");
+  await tick(40);
+  const hero = env.document.getElementById("hero");
+  const resume = env.document.getElementById("resume");
+  check("«Продолжить» разворачивает свёрнутый герой", !hero.classList.contains("is-collapsed") && resume.hidden === false);
+  resume.click();
+  await tick(30);
+  check("клик по «Продолжить» сворачивает герой (музыка пошла — атмосфера остаётся)", hero.classList.contains("is-collapsed") && app.player.state === "playing", `${hero.className} / ${app.player.state}`);
+  env.window.close();
+}
+
+{
+  // Персист: свёрнутое состояние переживает перезагрузку
+  const env = await makeEnv(html, { canvas: "stub" });
+  globalThis.Audio = FakeAudio;
+  env.window.localStorage.setItem("joer:heroCollapsed", "true");
+  await importFresh("js/app.js");
+  await tick(40);
+  check(
+    "свёрнутый герой восстанавливается после перезагрузки",
+    env.document.getElementById("hero").classList.contains("is-collapsed") && env.document.getElementById("hero-body").hasAttribute("inert"),
+  );
   env.window.close();
 }
 

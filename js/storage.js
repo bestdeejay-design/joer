@@ -23,6 +23,7 @@ export const KEYS = Object.freeze({
   quality: `${PREFIX}quality`,
   calm: `${PREFIX}calm`,
   group: `${PREFIX}group`,
+  heroCollapsed: `${PREFIX}heroCollapsed`,
 });
 
 /** In-memory фолбэк, если localStorage недоступен. */
@@ -208,6 +209,14 @@ export const prefs = {
   set group(value) {
     if (typeof value === "string" && value) write(KEYS.group, value);
     else remove(KEYS.group);
+  },
+
+  /** Герой свёрнут к верху («наслаждаться атмосферой»). */
+  get heroCollapsed() {
+    return readScalar(KEYS.heroCollapsed, false, (v) => typeof v === "boolean");
+  },
+  set heroCollapsed(value) {
+    write(KEYS.heroCollapsed, Boolean(value));
   },
 };
 

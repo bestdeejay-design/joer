@@ -64,6 +64,7 @@
     <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.2" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M15.6 15.6L20 20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
     <symbol id="i-close" viewBox="0 0 24 24"><path d="M6.4 6.4l11.2 11.2M17.6 6.4L6.4 17.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
     <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3.5l1.9 5.1 5.1 1.9-5.1 1.9L12 17.5l-1.9-5.1L5 10.5l5.1-1.9z" fill="currentColor"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="M7 10.2l5 5 5-5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   </defs>
 </svg>
 
@@ -178,22 +179,32 @@
 
   <main class="site-main" id="main">
     <div class="shell">
-      <section class="hero" aria-labelledby="hero-title">
-        <span class="hero-eyebrow">
-          <span class="live-dot" aria-hidden="true"></span>
-          кураторское интернет-радио
-        </span>
-        <h1 class="hero-title" id="hero-title">Выбери настроение — <span class="accent">атмосфера сделает остальное</span></h1>
-        <p class="hero-lead">
-          Пять миров: лаунж, клуб, романтика, космос и винтажный джаз. Станция запускается в один клик,
-          а цвета, свет и фон перестраиваются под музыку.
-        </p>
-        <div class="hero-actions">
-          <button class="btn btn-primary" id="resume" type="button" hidden>
-            <svg aria-hidden="true"><use href="#i-play"></use></svg>
-            <span id="resume-text">Продолжить</span>
+      <section class="hero" aria-labelledby="hero-title" id="hero">
+        <div class="hero-top">
+          <span class="hero-eyebrow">
+            <span class="live-dot" aria-hidden="true"></span>
+            кураторское интернет-радио
+          </span>
+          <button class="hero-fold" id="hero-fold" type="button" aria-expanded="true" aria-controls="hero-body" aria-label="Свернуть приветствие">
+            <span class="hero-fold-text" id="hero-fold-text">Свернуть</span>
+            <svg class="hero-fold-icon" aria-hidden="true"><use href="#i-chevron"></use></svg>
           </button>
-          <a class="btn btn-ghost" href="#stations">Выбрать настроение</a>
+        </div>
+        <div class="hero-body" id="hero-body">
+          <div class="hero-body-inner">
+            <h1 class="hero-title" id="hero-title">Выбери настроение&nbsp;— <span class="accent">атмосфера сделает остальное</span></h1>
+            <p class="hero-lead">
+              Пять миров: лаунж, клуб, романтика, космос и винтажный джаз. Станция запускается в один клик,
+              а цвета, свет и фон перестраиваются под музыку.
+            </p>
+            <div class="hero-actions">
+              <button class="btn btn-primary" id="resume" type="button" hidden>
+                <svg aria-hidden="true"><use href="#i-play"></use></svg>
+                <span id="resume-text">Продолжить</span>
+              </button>
+              <a class="btn btn-ghost" href="#stations">Выбрать настроение</a>
+            </div>
+          </div>
         </div>
       </section>
 
