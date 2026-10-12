@@ -1,0 +1,123 @@
+/* ============================================================
+   JOER — режим «Только атмосфера» (T-12)
+   Весь интерфейс уезжает, на экране остаётся живая сцена:
+   фоновый градиент, canvas атмосферы, зерно и виньетка.
+   ============================================================ */
+
+/* Кнопка входа — рядом со «Свернуть» в шапке героя */
+.hero-ambient {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: var(--touch);
+  padding: 0 var(--sp-3);
+  border: 1px solid color-mix(in oklab, var(--accent) 35%, transparent);
+  border-radius: var(--r-pill);
+  background: color-mix(in oklab, var(--accent) 12%, transparent);
+  color: color-mix(in oklab, var(--text) 85%, var(--accent));
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  transition:
+    color var(--dur-2) var(--ease-soft),
+    border-color var(--dur-2) var(--ease-soft),
+    background-color var(--dur-2) var(--ease-soft);
+}
+
+.hero-ambient:hover {
+  color: var(--text);
+  border-color: color-mix(in oklab, var(--accent) 60%, transparent);
+  background: color-mix(in oklab, var(--accent) 22%, transparent);
+}
+
+.hero-ambient-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--accent);
+}
+
+/* --- Состояние: на экране только атмосфера --- */
+
+/* Интерфейс плавно гаснет и выходит из порядка табуляции */
+.page {
+  transition: opacity 600ms var(--ease-soft), visibility 0s;
+}
+
+body.is-ambient {
+  overflow: hidden;
+}
+
+body.is-ambient .page {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 600ms var(--ease-soft), visibility 0s 600ms;
+}
+
+/* Сцена — в полную силу */
+.atmosphere {
+  transition: opacity 600ms var(--ease-soft);
+}
+
+body.is-ambient .atmosphere {
+  opacity: 1;
+}
+
+/* Подсказка «как выйти» — всплывает при входе и тихо уходит */
+.ambient-hint {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--sp-8) + var(--safe-b));
+  z-index: var(--z-toast);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: 0;
+  padding: 10px var(--sp-4);
+  border: 1px solid color-mix(in oklab, var(--border-strong) 60%, transparent);
+  border-radius: var(--r-pill);
+  background: color-mix(in oklab, var(--bg-1) 72%, transparent);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  backdrop-filter: blur(16px) saturate(150%);
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateX(-50%) translateY(6px);
+  transition:
+    opacity var(--dur-3) var(--ease-soft),
+    transform var(--dur-3) var(--ease-out),
+    visibility 0s var(--dur-3);
+}
+
+.ambient-hint.is-visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+  transition:
+    opacity var(--dur-3) var(--ease-soft),
+    transform var(--dur-3) var(--ease-out),
+    visibility 0s;
+}
+
+/* Узкие экраны: иконка без подписи — в ряд с «Свернуть» */
+@media (max-width: 480px) {
+  .hero-ambient {
+    gap: 0;
+    width: var(--touch);
+    padding: 0;
+    justify-content: center;
+  }
+
+  .hero-ambient-text {
+    display: none;
+  }
+
+  .ambient-hint {
+    font-size: var(--fs-xs);
+    padding: 8px var(--sp-3);
+  }
+}

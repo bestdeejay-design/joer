@@ -33,6 +33,7 @@
 <link rel="stylesheet" href="css/components/card.css">
 <link rel="stylesheet" href="css/components/states.css">
 <link rel="stylesheet" href="css/components/player.css">
+<link rel="stylesheet" href="css/components/ambient.css">
 <link rel="stylesheet" href="css/themes/lounge.css">
 <link rel="stylesheet" href="css/themes/club.css">
 <link rel="stylesheet" href="css/themes/romantic.css">
@@ -189,6 +190,10 @@
             <span class="hero-fold-text" id="hero-fold-text">Свернуть</span>
             <svg class="hero-fold-icon" aria-hidden="true"><use href="#i-chevron"></use></svg>
           </button>
+          <button class="hero-ambient" id="ambient-btn" type="button" aria-label="Режим атмосферы: скрыть интерфейс">
+            <svg class="hero-ambient-icon" aria-hidden="true"><use href="#i-spark"></use></svg>
+            <span class="hero-ambient-text">Атмосфера</span>
+          </button>
         </div>
         <div class="hero-body" id="hero-body">
           <div class="hero-body-inner">
@@ -326,6 +331,12 @@
     </div>
   </footer>
 </div>
+
+<!-- Режим атмосферы: подсказка как выйти; интерфейс скрыт, сцена — на весь экран -->
+<p class="ambient-hint" id="ambient-hint" role="status">
+  <span class="live-dot" aria-hidden="true"></span>
+  Атмосфера · клик или Esc — выйти
+</p>
 
 <script type="module" src="js/app.js"></script>
 </body>

@@ -16,6 +16,7 @@ import { createThemePicker } from "./ui/theme-picker.js";
 import { Atmosphere } from "./atmosphere.js";
 import { createReactivity, probeStreamCors, knownCorsSupport } from "./audio-reactivity.js";
 import { createHeroFold } from "./ui/hero.js";
+import { createAmbientMode } from "./ui/ambient.js";
 
 const els = {
   groups: document.getElementById("groups"),
@@ -67,6 +68,12 @@ document.addEventListener("joer:intensitychange", (event) => atmosphere.setInten
    ------------------------------------------------------------------ */
 
 const heroFold = createHeroFold();
+
+/* ------------------------------------------------------------------
+   Режим «Только атмосфера»: интерфейс гаснет, миры перетекают сами
+   ------------------------------------------------------------------ */
+
+const ambient = createAmbientMode({ themes, atmosphere });
 
 createThemePicker({
   root: document.getElementById("theme-picker"),
@@ -480,4 +487,4 @@ els.retry?.addEventListener("click", () => {
 syncVolumeUI();
 bootstrap();
 
-export { player, state, themes, atmosphere, heroFold, renderCatalog, clearSearch };
+export { player, state, themes, atmosphere, heroFold, ambient, renderCatalog, clearSearch };

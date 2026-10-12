@@ -1222,6 +1222,87 @@ section("14. Герой и адаптив (T-11)");
 }
 
 /* =====================================================================
+   15. Режим «Только атмосфера» (T-12)
+   ===================================================================== */
+section("15. Режим «Только атмосфера» (T-12)");
+
+{
+  // Статика: кнопка, подсказка, стили, модуль
+  check("кнопка режима атмосферы и подсказка-выход в разметке", /id="ambient-btn"/.test(html) && /id="ambient-hint"/.test(html));
+  check("стили режима подключены и описывают body.is-ambient", /css\/components\/ambient\.css/.test(html) && /body\.is-ambient/.test(read("css/components/ambient.css")));
+  check("модуль js/ui/ambient.js на месте", existsSync(path.join(ROOT, "js/ui/ambient.js")));
+  check("в режиме интерфейс гаснет, сцена — в полную силу", /\.is-ambient \.page/.test(read("css/components/ambient.css")) && /\.is-ambient \.atmosphere/.test(read("css/components/ambient.css")));
+}
+
+{
+  // Вход/выход: кнопка, Esc, клик по экрану
+  const env = await makeEnv(html, { canvas: "stub" });
+  globalThis.Audio = FakeAudio;
+  const app = await importFresh("js/app.js");
+  await tick(40);
+  const doc = env.document;
+  const btn = doc.getElementById("ambient-btn");
+  const page = doc.querySelector(".page");
+  const hint = doc.getElementById("ambient-hint");
+
+  check("режим стартует выключенным", !doc.body.classList.contains("is-ambient") && app.ambient.active === false);
+  btn.click();
+  await tick(10);
+  check("кнопка включает режим: только атмосфера", doc.body.classList.contains("is-ambient") && app.ambient.active === true);
+  check("интерфейс скрыт и недоступен (inert на .page)", page.hasAttribute("inert"));
+  check("подсказка «как выйти» показана", hint.hidden === false && hint.classList.contains("is-visible"));
+  check("aria-pressed переключился", btn.getAttribute("aria-pressed") === "true");
+
+  doc.dispatchEvent(new env.window.KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+  await tick(10);
+  check("Esc выходит из режима", !doc.body.classList.contains("is-ambient") && !page.hasAttribute("inert"));
+  check("подсказка скрыта после выхода", hint.hidden === true && !hint.classList.contains("is-visible"));
+
+  app.ambient.enter();
+  await tick(400);
+  doc.body.click();
+  await tick(10);
+  check("клик по экрану выходит из режима (после grace-периода)", app.ambient.active === false && !doc.body.classList.contains("is-ambient"));
+  env.window.close();
+}
+
+{
+  // Вращение миров и сохранность выбора пользователя
+  const env = await makeEnv(html, { canvas: "stub" });
+  globalThis.Audio = FakeAudio;
+  const app = await importFresh("js/app.js");
+  await tick(40);
+  app.themes.setMode("space");
+  const before = app.themes.theme;
+
+  const { createAmbientMode } = await importFresh("js/ui/ambient.js");
+  const ambient = createAmbientMode({ themes: app.themes, atmosphere: app.atmosphere, rotateMs: 40, listen: false, useFullscreen: false });
+  ambient.enter();
+  await tick(120);
+  check("миры перетекают сами (смена темы по таймеру)", app.themes.theme !== before, `${before} → ${app.themes.theme}`);
+  ambient.exit();
+  await tick(10);
+  check("после выхода тема пользователя восстановлена", app.themes.theme === "space" && app.themes.mode === "space", `${app.themes.mode}/${app.themes.theme}`);
+  await tick(120);
+  check("вращение остановлено после выхода", app.themes.theme === "space", app.themes.theme);
+  env.window.close();
+}
+
+{
+  // Большой экран: joer.ru/#atmosphere открывается сразу в режиме атмосферы
+  const env = await makeEnv(html, { canvas: "stub" });
+  globalThis.Audio = FakeAudio;
+  env.window.location.hash = "#atmosphere";
+  const app = await importFresh("js/app.js");
+  await tick(40);
+  check("адрес с #atmosphere запускает режим сразу", app.ambient.active === true && env.document.body.classList.contains("is-ambient"));
+  app.ambient.exit();
+  await tick(10);
+  check("выход очищает #atmosphere из адреса", env.window.location.hash !== "#atmosphere", env.window.location.hash);
+  env.window.close();
+}
+
+/* =====================================================================
    Итог
    ===================================================================== */
 console.log(`\nИтого: ${passed} ок, ${failed} провалено.`);
