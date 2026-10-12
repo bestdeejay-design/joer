@@ -185,13 +185,19 @@ export class Rhythm {
     const decay = Math.exp(-dt * 4.2);
     for (let i = 0; i < this.spectrum.length; i += 1) {
       const k = i / (this.spectrum.length - 1);
-      // Базовая «вода» — детерминированная, без мерцания random
-      const base = 0.1 + Math.sin(this.time * (0.55 + k * 1.7) + i * 0.9) * 0.045 + Math.sin(this.time * 0.21 + i) * 0.03;
-      let value = Math.max(0, base) + this.spectrum[i] * decay;
-      if (i < 7) value += this.kick * (1 - i / 8) * 0.85;
-      if (i >= 7 && i < 20) value += this.snare * 0.34;
-      if (i >= 18) value += this.hat * (0.22 + k * 0.2);
-      this.spectrum[i] = Math.min(1, value);
+      // Базовая «вода» — детерминированная, без мерцания random; наклон как у
+      // реальной музыки (низы громче верхов)
+      const base =
+        0.12 + (1 - k) * 0.12 +
+        Math.sin(this.time * (0.55 + k * 1.7) + i * 0.9) * 0.05 +
+        Math.sin(this.time * 0.21 + i) * 0.035;
+      let value = Math.max(0, base);
+      if (i < 7) value += this.kick * (1 - i / 8) * 0.75;
+      if (i >= 7 && i < 20) value += this.snare * 0.4;
+      if (i >= 18) value += this.hat * (0.26 + k * 0.22);
+      // Огибающая пика: мгновенный подъём, плавный спад. Прежнее сложение
+      // `base + prev * decay` копилось до ~1.5 и залипало в 1 (полный круг без динамики).
+      this.spectrum[i] = Math.min(1, Math.max(value, this.spectrum[i] * decay));
     }
   }
 }
